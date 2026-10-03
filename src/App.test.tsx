@@ -11,12 +11,20 @@ vi.mock("./api", () => ({
     saveFile: vi.fn(),
   },
 }));
+vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn() }));
 
 import App from "./App";
+import { useWorkspaceStore } from "./stores/workspace";
 
 describe("App", () => {
   it("未打开 vault 时显示空状态", async () => {
     render(<App />);
     expect(await screen.findByText("打开一个文件夹，开始笔记")).toBeInTheDocument();
+  });
+
+  it("有 vault 时显示侧栏", () => {
+    useWorkspaceStore.setState({ vault: "/canon/my-vault", tree: [] });
+    render(<App />);
+    expect(screen.getByText("my-vault")).toBeInTheDocument();
   });
 });

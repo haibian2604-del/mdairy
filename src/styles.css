@@ -46,3 +46,17 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   padding: 8px 20px; border-radius: 6px; font-weight: 500;
 }
 .error-text { color: var(--danger); }
+
+.vault-name {
+  padding: 10px 12px; text-align: left; font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tree-empty { padding: 16px 12px; color: var(--fg-muted); font-size: 13px; }
+.file-tree { list-style: none; margin: 0; padding: 4px 0; }
+.tree-row {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 4px 8px; border-radius: 4px; text-align: left; font-size: 13px;
+}
+.tree-row:hover { background: var(--bg-inset); }
+.tree-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
