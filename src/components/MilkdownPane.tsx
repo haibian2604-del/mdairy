@@ -28,6 +28,7 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
   const loadedRef = useRef<{ rel: string | null; content: string | null }>({ rel: null, content: null });
   const activeRel = useTabsStore((s) => s.activeRel);
   const tab = useTabsStore((s) => s.tabs.find((t) => t.rel === s.activeRel));
+  const pendingJump = useTabsStore((s) => s.pendingJump);
 
   // activeRel 在 markdownUpdated 闭包（创建于挂载时）中会过期，经 ref 转发最新值
   const activeRelRef = useRef<string | null>(activeRel);
@@ -64,6 +65,35 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 大纲/搜索命中跳转定位：pendingJump.rel 匹配当前 tab 时，把 .ProseMirror 的
+  // 第 min(line, 块数-1) 个直接子元素（块级节点）滚入视口，然后 consumeJump。
+  // 时序：首建/replaceAll 均异步（create().then），跳转 action 必须等编辑器就绪，
+  // 故挂在 creatingRef 之后；.ProseMirror 也在 then 里查（create 未完成时元素尚未挂载），
+  // 找不到则静默放弃（consumeJump 照做）。行号→块序为近似定位，允许 ±1 块误差。
+  useEffect(() => {
+    if (!pendingJump || pendingJump.rel !== activeRel) return;
+    const jump = pendingJump;
+    let stale = false;
+    void creatingRef.current
+      ?.then(() => {
+        if (stale) return;
+        const blocks = containerRef.current?.querySelector(".ProseMirror")?.children;
+        if (blocks && blocks.length > 0) {
+          blocks[Math.min(jump.line, blocks.length - 1)]?.scrollIntoView({ block: "start" });
+        }
+      })
+      .catch(() => {}) // 卸载竞态下 editor 可能已销毁，忽略清理期错误
+      .finally(() => {
+        // 仍是同一个跳转请求才消费（期间来了新请求则留给新请求的 effect 处理）
+        if (!stale && useTabsStore.getState().pendingJump === jump) {
+          useTabsStore.getState().consumeJump();
+        }
+      });
+    return () => {
+      stale = true;
+    };
+  }, [pendingJump, activeRel]);
 
   // 切换标签/外部重载：rel 变化，或（非自身回写的）content 变化 → replaceAll
   useEffect(() => {

@@ -73,6 +73,19 @@ describe("tabsStore", () => {
     useTabsStore.getState().consumeJump();
     expect(useTabsStore.getState().pendingJump).toBeNull();
   });
+
+  it("requestJump 无 vault 或文件读取失败时静默不跳转", async () => {
+    const { api } = await import("../api");
+    useWorkspaceStore.setState({ vault: null });
+    await useTabsStore.getState().requestJump("gone.md", 0);
+    expect(useTabsStore.getState().pendingJump).toBeNull(); // 无 vault：不发请求不置跳转
+
+    useWorkspaceStore.setState({ vault: "/canon/v" });
+    vi.mocked(api.readFile).mockRejectedValueOnce("不存在"); // 大纲/搜索点击已删文件
+    await useTabsStore.getState().requestJump("gone.md", 0);
+    expect(useTabsStore.getState().pendingJump).toBeNull();
+    expect(useTabsStore.getState().tabs).toHaveLength(0);
+  });
 });
 
 describe("tabsStore v2: 冲突状态机 / 快照保存 / 关闭确认", () => {

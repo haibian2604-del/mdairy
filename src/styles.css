@@ -29,9 +29,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   display: grid; height: 100vh;
   grid-template-columns: 260px 1fr; grid-template-rows: 1fr 28px;
 }
+.app-shell.has-right { grid-template-columns: 260px 1fr 220px; }
 .app-shell.no-vault { grid-template-columns: 1fr; }
 .sidebar {
   grid-row: 1; background: var(--bg-sidebar); border-right: 1px solid var(--border);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.right-panel {
+  grid-row: 1; background: var(--bg-sidebar); border-left: 1px solid var(--border);
   overflow-y: auto; display: flex; flex-direction: column;
 }
 .main-area { display: flex; flex-direction: column; min-width: 0; grid-row: 1; }
@@ -101,6 +106,19 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: inherit; border-radius: 2px; padding: 0 1px;
 }
+
+/* 大纲面板（右栏） */
+.outline-title {
+  flex: none; padding: 10px 12px 4px;
+  font-size: 12px; font-weight: 600; color: var(--fg-muted);
+}
+.outline-empty { padding: 12px; font-size: 13px; color: var(--fg-muted); }
+.outline-item {
+  display: block; width: 100%; padding: 3px 8px; border-radius: 4px;
+  text-align: left; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.outline-item:hover { background: var(--bg-inset); }
 
 .tab-bar {
   display: flex; gap: 2px; padding: 4px 8px 0;
