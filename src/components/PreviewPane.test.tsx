@@ -46,6 +46,15 @@ describe("PreviewPane", () => {
     expect(decodeURIComponent(img.src)).toContain("/canon/v/_assets/p.png");
   });
 
+  it("中文文件名图片：markdown-it 编码后的 src 先解码再转换，不双重编码", () => {
+    // markdown-it 会把 src 编码为 %E5%AD%90%E7%9B%AE%E5%BD%95/%E5%9B%BE.png
+    setActive("![图](子目录/图.png)");
+    render(<PreviewPane />);
+    const img = screen.getByRole("img") as HTMLImageElement;
+    // convertFileSrc mock 会把传入路径整体 encode 一次；解码后必须还原出原始中文路径
+    expect(decodeURIComponent(img.src)).toContain("/canon/v/子目录/图.png");
+  });
+
   it("http 外链点击走 openUrl 且不跳转", async () => {
     setActive("[官网](https://example.com)");
     render(<PreviewPane />);
@@ -57,6 +66,14 @@ describe("PreviewPane", () => {
     setActive("[内链](b.md)");
     render(<PreviewPane />);
     fireEvent.click(screen.getByText("内链"));
+    expect(openUrl).not.toHaveBeenCalled();
+  });
+
+  it("相对链接点击 preventDefault，不触发 webview 导航", () => {
+    setActive("[内链](b.md)");
+    render(<PreviewPane />);
+    // fireEvent 返回 false 即 preventDefault 已生效（jsdom 因此不会发起导航替换应用视图）
+    expect(fireEvent.click(screen.getByText("内链"))).toBe(false);
     expect(openUrl).not.toHaveBeenCalled();
   });
 
