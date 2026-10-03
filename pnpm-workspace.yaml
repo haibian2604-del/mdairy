@@ -1,3 +1,2 @@
 patchedDependencies:
-  '@hedgedoc/markdown-it-task-lists': patches/@hedgedoc__markdown-it-task-lists.patch
   '@milkdown/components': patches/@milkdown__components.patch

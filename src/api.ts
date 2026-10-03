@@ -10,6 +10,13 @@ export interface FileContent {
   encoding: string;
 }
 
+export interface SearchHit {
+  rel: string;
+  line: number;
+  column: number;
+  lineText: string;
+}
+
 export const api = {
   setVault: (path: string) => invoke<string>("set_vault", { path }),
   getLastVault: () => invoke<string | null>("get_last_vault"),
@@ -22,4 +29,5 @@ export const api = {
       expectedMtimeMillis: opts?.expectedMtimeMillis ?? null,
     }),
   watchVault: (vault: string) => invoke<void>("watch_vault", { vault }),
+  searchVault: (vault: string, query: string) => invoke<SearchHit[]>("search_vault", { vault, query }),
 };

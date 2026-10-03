@@ -1,4 +1,5 @@
 mod files;
+mod search;
 mod watcher;
 mod workspace;
 
@@ -14,6 +15,7 @@ pub fn run() {
             files::list_tree,
             files::read_file,
             files::save_file,
+            search::search_vault,
             watcher::watch_vault
         ])
         .run(tauri::generate_context!())

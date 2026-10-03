@@ -90,6 +90,11 @@ fn decode(bytes: &[u8]) -> (String, &'static Encoding) {
     (enc.decode(bytes).0.into_owned(), enc)
 }
 
+/// 供其他模块（如 search.rs）复用既有解码策略的公开包装，直接转发私有 `decode`。
+pub fn decode_public(bytes: &[u8]) -> (String, &'static encoding_rs::Encoding) {
+    decode(bytes)
+}
+
 fn encode(content: &str, encoding: &str) -> Vec<u8> {
     let enc = Encoding::for_label(encoding.as_bytes()).unwrap_or(UTF_8);
     enc.encode(content).0.into_owned()

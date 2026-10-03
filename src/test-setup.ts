@@ -5,7 +5,7 @@ if (typeof Element.prototype.scrollIntoView !== "function") {
   Element.prototype.scrollIntoView = () => {};
 }
 
-// jsdom 未实现 matchMedia（mermaid 主题跟随系统亮暗需要）
+// jsdom 未实现 matchMedia（编辑器主题跟随系统亮暗需要）
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = ((query: string) =>
     ({

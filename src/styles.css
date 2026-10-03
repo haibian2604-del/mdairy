@@ -1,6 +1,5 @@
 /* CSS @import 必须位于文件顶部（其他规则之前），Vite 才能正确内联处理 */
 @import "katex/dist/katex.min.css";
-@import "highlight.js/styles/github.css";
 @import "@milkdown/crepe/theme/common/style.css";
 @import "@milkdown/crepe/theme/frame.css";
 
@@ -97,36 +96,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn { border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
 
-/* hljs 暗色：按 github-dark 配色手写覆盖（scoped，:root:not([data-theme="light"]) 与 token 切换机制一致），
-   背景透明以融入应用底色；@import 无法嵌套进 media，故不引第二份主题文件 */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .hljs { color: #c9d1d9; background: transparent; }
-  :root:not([data-theme="light"]) :where(.hljs-doctag, .hljs-keyword, .hljs-meta .hljs-keyword,
-    .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #ff7b72; }
-  :root:not([data-theme="light"]) :where(.hljs-title, .hljs-title.class_,
-    .hljs-title.class_.inherited__, .hljs-title.function_) { color: #d2a8ff; }
-  :root:not([data-theme="light"]) :where(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta,
-    .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class,
-    .hljs-selector-id) { color: #79c0ff; }
-  :root:not([data-theme="light"]) :where(.hljs-regexp, .hljs-string, .hljs-meta .hljs-string) { color: #a5d6ff; }
-  :root:not([data-theme="light"]) :where(.hljs-built_in, .hljs-symbol) { color: #ffa657; }
-  :root:not([data-theme="light"]) :where(.hljs-comment, .hljs-code, .hljs-formula) { color: #8b949e; }
-  :root:not([data-theme="light"]) :where(.hljs-name, .hljs-quote, .hljs-selector-tag,
-    .hljs-selector-pseudo) { color: #7ee787; }
-  :root:not([data-theme="light"]) :where(.hljs-subst, .hljs-emphasis, .hljs-strong) { color: #c9d1d9; }
-  :root:not([data-theme="light"]) :where(.hljs-section) { color: #1f6feb; font-weight: bold; }
-  :root:not([data-theme="light"]) :where(.hljs-bullet) { color: #f2cc60; }
-  :root:not([data-theme="light"]) :where(.hljs-addition) { color: #aff5b4; background-color: #033a16; }
-  :root:not([data-theme="light"]) :where(.hljs-deletion) { color: #ffdcd7; background-color: #67060c; }
-}
-
 /* Milkdown WYSIWYG 编辑器（Crepe frame 主题） */
 .milkdown-pane { flex: 1; min-height: 0; overflow-y: auto; }
 .milkdown-pane .milkdown { min-height: 100%; background: var(--bg); color: var(--fg); }
 
 /* Crepe 暗色适配：frame-dark 主题与 frame 同为 `.milkdown` 作用域、先后引入无法按系统亮暗切换
    （@import 无法嵌套进 media），故照 frame-dark 变量手写暗色覆盖，
-   选择器 :root:not([data-theme="light"]) 提升优先级并与 hljs/token 切换机制一致 */
+   选择器 :root:not([data-theme="light"]) 提升优先级并与 token 切换机制一致 */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .milkdown {
     --crepe-color-background: #1a1a1a;
