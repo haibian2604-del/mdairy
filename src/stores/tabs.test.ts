@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../api", () => ({
-  api: { saveFile: vi.fn(async (_v: string, _r: string, c: string) => ({ content: c, mtimeMillis: 42 })) },
+  api: { saveFile: vi.fn(async (_v: string, _r: string, c: string) => ({ content: c, mtimeMillis: 42, encoding: "UTF-8" })) },
 }));
 
 import { useTabsStore } from "./tabs";

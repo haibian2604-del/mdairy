@@ -7,6 +7,7 @@ export type TreeNode =
 export interface FileContent {
   content: string;
   mtimeMillis: number;
+  encoding: string;
 }
 
 export const api = {
@@ -14,6 +15,10 @@ export const api = {
   getLastVault: () => invoke<string | null>("get_last_vault"),
   listTree: (vault: string) => invoke<TreeNode[]>("list_tree", { vault }),
   readFile: (vault: string, rel: string) => invoke<FileContent>("read_file", { vault, rel }),
-  saveFile: (vault: string, rel: string, content: string) =>
-    invoke<FileContent>("save_file", { vault, rel, content }),
+  saveFile: (vault: string, rel: string, content: string, opts?: { encoding?: string; expectedMtimeMillis?: number }) =>
+    invoke<FileContent>("save_file", {
+      vault, rel, content,
+      encoding: opts?.encoding ?? null,
+      expectedMtimeMillis: opts?.expectedMtimeMillis ?? null,
+    }),
 };
