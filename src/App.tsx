@@ -5,21 +5,35 @@ import { AppShell } from "./components/AppShell";
 import { CloseConfirmDialog } from "./components/CloseConfirmDialog";
 import { ConflictDialog } from "./components/ConflictDialog";
 import { EditorPane } from "./components/EditorPane";
+import { PreviewPane } from "./components/PreviewPane";
 import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
+import { useSettingsStore } from "./stores/settings";
 import { useWorkspaceStore } from "./stores/workspace";
 
 export default function App() {
   const vault = useWorkspaceStore((s) => s.vault);
   const error = useWorkspaceStore((s) => s.error);
   const openVault = useWorkspaceStore((s) => s.openVault);
+  const viewMode = useSettingsStore((s) => s.viewMode);
 
   useEffect(() => {
     void useWorkspaceStore.getState().restoreLastVault();
   }, []);
   useVaultEvents(vault);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey && !e.shiftKey && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        useSettingsStore.getState().cycleViewMode();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const pick = async () => {
     const path = await pickFolder({ directory: true });
@@ -42,7 +56,16 @@ export default function App() {
         main={vault ? (
           <>
             <TabBar />
-            <EditorPane />
+            {viewMode === "edit" ? (
+              <EditorPane />
+            ) : viewMode === "split" ? (
+              <div className="split">
+                <EditorPane />
+                <PreviewPane />
+              </div>
+            ) : (
+              <div className="preview-full"><PreviewPane /></div>
+            )}
           </>
         ) : emptyState}
         statusBar={<StatusBar />}

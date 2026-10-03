@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useTabsStore } from "../stores/tabs";
+import { ViewModeSwitch } from "./ViewModeSwitch";
 
 export function TabBar() {
   const tabs = useTabsStore((s) => s.tabs);
@@ -31,6 +32,7 @@ export function TabBar() {
           </button>
         </div>
       ))}
+      <ViewModeSwitch />
     </div>
   );
 }
