@@ -4,6 +4,7 @@ import { useWorkspaceStore } from "../stores/workspace";
 export function StatusBar() {
   const vault = useWorkspaceStore((s) => s.vault);
   const activeRel = useTabsStore((s) => s.activeRel);
+  const encoding = useTabsStore((s) => s.tabs.find((t) => t.rel === s.activeRel)?.encoding ?? "");
   const isDirty = useTabsStore((s) => s.isDirty(s.activeRel));
 
   return (
@@ -12,6 +13,7 @@ export function StatusBar() {
         {vault && activeRel ? `${vault}/${activeRel}` : (vault ?? "")}
       </span>
       {activeRel && <span>{isDirty ? "未保存" : "已保存"}</span>}
+      {activeRel && encoding && <span>{encoding}</span>}
     </>
   );
 }

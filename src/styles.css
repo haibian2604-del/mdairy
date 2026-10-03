@@ -80,3 +80,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .editor-empty {
   flex: 1; display: grid; place-items: center; color: var(--fg-muted);
 }
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: grid; place-items: center; z-index: 50;
+}
+.modal-panel {
+  background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px 24px; width: 420px; max-width: calc(100vw - 48px);
+  box-shadow: 0 8px 30px rgba(0,0,0,.2);
+}
+.modal-panel h2 { margin: 0 0 8px; font-size: 16px; }
+.modal-desc { margin: 0 0 16px; color: var(--fg-muted); font-size: 13px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.btn { border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }
