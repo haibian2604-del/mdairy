@@ -34,7 +34,10 @@ export function EditorPane() {
     viewRef.current = view;
     loadedRel.current = null;
     return () => { view.destroy(); viewRef.current = null; };
-  }, []);
+    // 容器 div 仅在有激活 tab 时渲染，必须随 `!!tab` 重建/销毁 view，
+    // 否则首次打开 tab 时 effect 已空转过、view 永不创建；
+    // 关闭最后一个 tab 后旧 view 会附着在已分离 DOM 上。
+  }, [!!tab]);
 
   useEffect(() => {
     const view = viewRef.current;
