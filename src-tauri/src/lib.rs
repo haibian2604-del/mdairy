@@ -8,7 +8,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             workspace::get_last_vault,
-            workspace::set_vault
+            workspace::set_vault,
+            files::list_tree,
+            files::read_file,
+            files::save_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
