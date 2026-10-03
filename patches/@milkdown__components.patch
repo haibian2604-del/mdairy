@@ -1,0 +1,17 @@
+diff --git a/lib/image-block/index.js b/lib/image-block/index.js
+index ba6e478ff5d685224be694969d139901109f68c2..732db4b1fe71f3358fd40ae12cde66de8e4e5450 100644
+--- a/lib/image-block/index.js
++++ b/lib/image-block/index.js
+@@ -133,7 +133,11 @@ const imageBlockSchema = $nodeSchema("image-block", () => {
+       match: ({ type }) => type === "image-block",
+       runner: (state, node, type) => {
+         const src = node.url;
+-        const caption = node.title;
++        // patch(mdairy): title-less images (![](...)) pass caption=null into
++        // prosemirror attr validation (validate: 'string') which throws
++        // RangeError and silently drops the whole image paragraph from the doc.
++        // Coerce missing title to '' so the schema default semantics apply.
++        const caption = node.title == null ? "" : node.title;
+         let ratio = Number(node.alt || 1);
+         if (Number.isNaN(ratio) || ratio === 0) ratio = 1;
+         state.addNode(type, {

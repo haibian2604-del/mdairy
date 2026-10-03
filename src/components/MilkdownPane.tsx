@@ -1,17 +1,21 @@
 import { useEffect, useRef } from "react";
 import { Crepe } from "@milkdown/crepe";
 import { replaceAll } from "@milkdown/kit/utils";
+import { toEditableMarkdown, toStoredMarkdown } from "../lib/assetPaths";
 import { useTabsStore } from "../stores/tabs";
+import { useWorkspaceStore } from "../stores/workspace";
 
 export function MilkdownPane() {
+  const vault = useWorkspaceStore((s) => s.vault);
   const tab = useTabsStore((s) => s.tabs.find((t) => t.rel === s.activeRel));
   // 无 tab 时不渲染编辑器容器：内层编辑器随 tab 打开挂载、关闭卸载，
   // 避免"挂载时无 tab 导致编辑器永不创建"的时序问题
   if (!tab) return <div className="editor-empty">从左侧选择一个文件</div>;
-  return <MilkdownEditor defaultValue={tab.content} />;
+  // 进编辑器的永远是可编辑形态（相对路径 → asset URL）；store/磁盘始终保持存储形态
+  return <MilkdownEditor defaultValue={toEditableMarkdown(tab.content, vault ?? "")} vault={vault ?? ""} />;
 }
 
-function MilkdownEditor({ defaultValue }: { defaultValue: string }) {
+function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const crepeRef = useRef<Crepe | null>(null);
   const creatingRef = useRef<Promise<unknown> | null>(null);
@@ -38,11 +42,12 @@ function MilkdownEditor({ defaultValue }: { defaultValue: string }) {
         listener.markdownUpdated((_ctx, markdown) => {
           if (snapshotRef.current !== null && markdown === snapshotRef.current) return;
           snapshotRef.current = null;
-          // 回写守卫核心：把 loadedRef.content 同步为最新 markdown，
-          // 使"编辑器回写引发的 store content 变化"在下方 effect 走 selfEcho 分支，
-          // 不再触发 replaceAll（无死循环）
-          loadedRef.current = { rel: activeRelRef.current, content: markdown };
-          useTabsStore.getState().updateActive(markdown);
+          // 回写用存储形态（asset URL → 相对路径）。loadedRef 与 store content 均存
+          // 同一存储形态，保证下方 effect 的 selfEcho 比较两端形态一致（无死循环）；
+          // 守卫快照（snapshotRef）则始终用编辑器原生产出，不做形态变换
+          const stored = toStoredMarkdown(markdown, vault);
+          loadedRef.current = { rel: activeRelRef.current, content: stored };
+          useTabsStore.getState().updateActive(stored);
         });
       });
       snapshotRef.current = crepe.getMarkdown();
@@ -70,7 +75,7 @@ function MilkdownEditor({ defaultValue }: { defaultValue: string }) {
     loadedRef.current = { rel: activeRel, content: tab.content };
     void creatingRef.current
       ?.then(() => {
-        crepe.editor.action(replaceAll(tab.content));
+        crepe.editor.action(replaceAll(toEditableMarkdown(tab.content, vault)));
         snapshotRef.current = crepe.getMarkdown();
       })
       .catch(() => {}); // 卸载竞态下 editor 可能已销毁，忽略清理期错误

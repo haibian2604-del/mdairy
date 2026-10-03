@@ -12,6 +12,7 @@ import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
 import { useSettingsStore } from "./stores/settings";
+import { useTabsStore } from "./stores/tabs";
 import { useWorkspaceStore } from "./stores/workspace";
 
 export default function App() {
@@ -30,6 +31,12 @@ export default function App() {
       if (e.metaKey && !e.shiftKey && e.key.toLowerCase() === "e") {
         e.preventDefault();
         useSettingsStore.getState().cycleViewMode();
+      }
+      // ⌘S/ctrl+S 全局保存（与 ⌘E 并列；EditorPane 的 CM6 Mod-s keymap 在 split
+      // 并存期对 MilkdownPane 不生效，由这里兜底）
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void useTabsStore.getState().saveActive();
       }
     };
     window.addEventListener("keydown", onKey);

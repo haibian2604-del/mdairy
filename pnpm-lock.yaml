@@ -6,6 +6,7 @@ settings:
 
 patchedDependencies:
   '@hedgedoc/markdown-it-task-lists': b131c7b147939ac2421f55fdd0468631524ca353c4170b158b86bcdbcfcecc72
+  '@milkdown/components': 1e4a0059517e3b85e233780efbe9c96a36bfa37b23ecf65d8668f5bbb07d939d
 
 importers:
 
@@ -2543,7 +2544,7 @@ snapshots:
     dependencies:
       '@chevrotain/types': 11.1.2
 
-  '@milkdown/components@7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(supports-color@7.1.0)(typescript@6.0.3)':
+  '@milkdown/components@7.22.2(patch_hash=1e4a0059517e3b85e233780efbe9c96a36bfa37b23ecf65d8668f5bbb07d939d)(@codemirror/language@6.12.4)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(supports-color@7.1.0)(typescript@6.0.3)':
     dependencies:
       '@codemirror/language': 6.12.4
       '@codemirror/state': 6.7.6
@@ -2616,7 +2617,7 @@ snapshots:
 
   '@milkdown/kit@7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(supports-color@7.1.0)(typescript@6.0.3)':
     dependencies:
-      '@milkdown/components': 7.22.2(@codemirror/language@6.12.4)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(supports-color@7.1.0)(typescript@6.0.3)
+      '@milkdown/components': 7.22.2(patch_hash=1e4a0059517e3b85e233780efbe9c96a36bfa37b23ecf65d8668f5bbb07d939d)(@codemirror/language@6.12.4)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(supports-color@7.1.0)(typescript@6.0.3)
       '@milkdown/core': 7.22.2(supports-color@7.1.0)
       '@milkdown/ctx': 7.22.2
       '@milkdown/exception': 7.22.2
