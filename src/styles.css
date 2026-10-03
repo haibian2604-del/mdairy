@@ -1,0 +1,48 @@
+:root {
+  --bg: #fafaf9; --bg-sidebar: #f5f5f4; --bg-inset: #f5f5f4;
+  --fg: #1c1917; --fg-muted: #57534e; --border: #e7e5e4;
+  --accent: #d97706; --accent-fg: #ffffff;
+  --danger: #dc2626; --ring: #d97706;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0a09; --bg-sidebar: #171412; --bg-inset: #1c1917;
+    --fg: #fafaf9; --fg-muted: #a8a29e; --border: #292524;
+    --accent: #f59e0b; --accent-fg: #0c0a09;
+    --danger: #ef4444; --ring: #f59e0b;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.6 -apple-system, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring); outline-offset: -1px; }
+
+.app-shell {
+  display: grid; height: 100vh;
+  grid-template-columns: 260px 1fr; grid-template-rows: 1fr 28px;
+}
+.app-shell.no-vault { grid-template-columns: 1fr; }
+.sidebar {
+  grid-row: 1; background: var(--bg-sidebar); border-right: 1px solid var(--border);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.main-area { display: flex; flex-direction: column; min-width: 0; grid-row: 1; }
+.status-bar {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 16px;
+  padding: 0 12px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--fg-muted); white-space: nowrap;
+}
+.status-path { overflow: hidden; text-overflow: ellipsis; }
+
+.empty-state {
+  place-self: center; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  color: var(--fg-muted);
+}
+.btn-primary {
+  background: var(--accent); color: var(--accent-fg);
+  padding: 8px 20px; border-radius: 6px; font-weight: 500;
+}
+.error-text { color: var(--danger); }
