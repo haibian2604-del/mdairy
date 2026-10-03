@@ -50,4 +50,16 @@ describe("CommandPalette", () => {
     fireEvent.keyDown(screen.getByPlaceholderText("输入命令或文件名…"), { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("IME 组合态 Enter 被忽略：不执行不关闭（isComposing 与 keyCode 229 两分支）", () => {
+    const onClose = vi.fn();
+    render(<CommandPalette mode="all" onClose={onClose} />);
+    const input = screen.getByPlaceholderText("输入命令或文件名…");
+    // 拼音组合态回车上屏候选词：keydown key="Enter" 且 isComposing=true
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    // 部分环境组合态 keyCode 统一为 229
+    fireEvent.keyDown(input, { key: "Enter", keyCode: 229 });
+    expect(runSpy).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

@@ -63,6 +63,9 @@ export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClo
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
+    // IME 组合态守卫：拼音等输入法组合中回车=上屏候选词、↑↓=选候选词，
+    // 这些 keydown（isComposing 或 keyCode 229）不应驱动面板的选择/执行/关闭
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       if (items.length > 0) setSelected((i) => (Math.min(i, items.length - 1) + 1) % items.length);
