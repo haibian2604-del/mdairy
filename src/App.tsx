@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { open as pickFolder } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
 import { AppShell } from "./components/AppShell";
+import { EditorPane } from "./components/EditorPane";
 import { Sidebar } from "./components/Sidebar";
+import { StatusBar } from "./components/StatusBar";
+import { TabBar } from "./components/TabBar";
 import { useWorkspaceStore } from "./stores/workspace";
 
 export default function App() {
@@ -32,8 +35,13 @@ export default function App() {
     <AppShell
       hasSidebar={!!vault}
       sidebar={vault ? <Sidebar /> : null}
-      main={vault ? <div>editor-placeholder</div> : emptyState}
-      statusBar={<span />}
+      main={vault ? (
+        <>
+          <TabBar />
+          <EditorPane />
+        </>
+      ) : emptyState}
+      statusBar={<StatusBar />}
     />
   );
 }
