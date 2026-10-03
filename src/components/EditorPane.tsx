@@ -9,6 +9,7 @@ export function EditorPane() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const loadedRel = useRef<string | null>(null);
+  const cursorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRel = useTabsStore((s) => s.activeRel);
   const tab = useTabsStore((s) => s.tabs.find((t) => t.rel === s.activeRel));
 
@@ -27,13 +28,21 @@ export function EditorPane() {
           }])),
           EditorView.updateListener.of((u) => {
             if (u.docChanged) useTabsStore.getState().updateActive(u.state.doc.toString());
+            const line = u.state.doc.lineAt(u.state.selection.main.head).number - 1;
+            if (line === useTabsStore.getState().cursorLine) return;
+            if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current);
+            cursorDebounceRef.current = setTimeout(() => useTabsStore.getState().setCursorLine(line), 100);
           }),
         ],
       }),
     });
     viewRef.current = view;
     loadedRel.current = null;
-    return () => { view.destroy(); viewRef.current = null; };
+    return () => {
+      view.destroy();
+      viewRef.current = null;
+      if (cursorDebounceRef.current) clearTimeout(cursorDebounceRef.current);
+    };
     // 容器 div 仅在有激活 tab 时渲染，必须随 `!!tab` 重建/销毁 view，
     // 否则首次打开 tab 时 effect 已空转过、view 永不创建；
     // 关闭最后一个 tab 后旧 view 会附着在已分离 DOM 上。

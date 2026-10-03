@@ -30,10 +30,12 @@ interface TabsState {
   activeRel: string | null;
   conflict: ExternalConflict | null;
   pendingCloseRel: string | null;
+  cursorLine: number;
   open: (t: OpenArgs) => void;
   close: (rel: string) => void;
   setActive: (rel: string) => void;
   updateActive: (content: string) => void;
+  setCursorLine: (n: number) => void;
   isDirty: (rel: string | null) => boolean;
   saveActive: (force?: boolean) => Promise<void>;
   reloadConflict: () => Promise<void>;
@@ -51,6 +53,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   activeRel: null,
   conflict: null,
   pendingCloseRel: null,
+  cursorLine: 0,
   open: (t) =>
     set((s) => {
       if (s.tabs.some((x) => x.rel === t.rel)) return { activeRel: t.rel };
@@ -76,6 +79,9 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     set((s) => ({
       tabs: s.tabs.map((t) => (t.rel === s.activeRel ? { ...t, content } : t)),
     })),
+  // 同值时返回原 state（no-op），避免编辑器光标上报触发无意义的订阅更新
+  setCursorLine: (n) =>
+    set((s) => (s.cursorLine === n ? s : { cursorLine: n })),
   isDirty: (rel) => {
     if (!rel) return false;
     const t = get().tabs.find((x) => x.rel === rel);

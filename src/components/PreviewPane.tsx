@@ -25,7 +25,9 @@ async function getMermaid() {
 export function PreviewPane() {
   const vault = useWorkspaceStore((s) => s.vault);
   const tab = useTabsStore((s) => s.tabs.find((t) => t.rel === s.activeRel));
+  const cursorLine = useTabsStore((s) => s.cursorLine);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastAnchor = useRef<Element | null>(null);
   const html = useMemo(() => (tab ? renderMarkdown(tab.content) : ""), [tab?.content]);
 
   // 图片 src：以 vault 根为基准解析（剥离 ./，丢弃越出 vault 的 .. 段）
@@ -71,6 +73,23 @@ export function PreviewPane() {
     })();
     return () => { cancelled = true; };
   }, [html]);
+
+  // 分栏滚动同步：光标行 → 预览块级锚点（data-source-line，0 基，文档序）。
+  // 取 line <= cursorLine 的最大者；与上次锚点不同才滚动（±1 块误差自然允许）。
+  // 瞬时定位不动画：同步跟随场景 smooth 会拖影。
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+    let target: Element | null = null;
+    for (const el of root.querySelectorAll("[data-source-line]")) {
+      if (Number(el.getAttribute("data-source-line")) <= cursorLine) target = el;
+      else break;
+    }
+    if (target && target !== lastAnchor.current) {
+      lastAnchor.current = target;
+      target.scrollIntoView({ block: "start" });
+    }
+  }, [cursorLine, html]);
 
   if (!tab) return <div className="editor-empty">当前标签没有内容</div>;
   return (

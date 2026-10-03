@@ -52,8 +52,16 @@ describe("tabsStore", () => {
 
   it("无 vault 时 saveActive 静默跳过", async () => {
     useWorkspaceStore.setState({ vault: null });
-    useTabsStore.getState().open({ rel: "a.md", name: "a", content: "x", mtimeMillis: 1, encoding: "UTF-8" });
+    useTabsStore.getState().open({ rel: "a.md", name: "a.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });
     await expect(useTabsStore.getState().saveActive()).resolves.toBeUndefined();
+  });
+
+  it("setCursorLine 更新且同值 no-op", () => {
+    useTabsStore.getState().setCursorLine(5);
+    expect(useTabsStore.getState().cursorLine).toBe(5);
+    const before = useTabsStore.getState();
+    useTabsStore.getState().setCursorLine(5);
+    expect(useTabsStore.getState()).toBe(before); // 引用不变，未触发订阅
   });
 });
 
