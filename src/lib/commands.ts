@@ -1,6 +1,5 @@
-import { open as pickFolder } from "@tauri-apps/plugin-dialog";
 import { useUiStore } from "../stores/ui";
-import { useWorkspaceStore } from "../stores/workspace";
+import { pickAndOpenVault } from "./pickVault";
 
 export interface Command {
   id: string;
@@ -28,11 +27,7 @@ export function useCommands(): Command[] {
     {
       id: "open-folder",
       label: "打开文件夹",
-      run: () => {
-        void pickFolder({ directory: true }).then((path) => {
-          if (path) void useWorkspaceStore.getState().openVault(path);
-        });
-      },
+      run: () => void pickAndOpenVault(),
     },
     // M6 占位：切换主题（亮/暗/跟随系统）、新建笔记、最近文件等在此注册。
   ];

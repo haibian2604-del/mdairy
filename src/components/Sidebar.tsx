@@ -1,15 +1,14 @@
 import { useEffect, useRef } from "react";
-import { open as pickFolder } from "@tauri-apps/plugin-dialog";
 import { FileTree } from "./FileTree";
 import { SearchPanel } from "./SearchPanel";
 import { useOpenFile } from "../hooks/useOpenFile";
+import { pickAndOpenVault } from "../lib/pickVault";
 import { useUiStore } from "../stores/ui";
 import { useWorkspaceStore } from "../stores/workspace";
 
 export function Sidebar() {
   const vault = useWorkspaceStore((s) => s.vault);
   const tree = useWorkspaceStore((s) => s.tree);
-  const openVault = useWorkspaceStore((s) => s.openVault);
   const onOpenFile = useOpenFile();
   // 页签 state 提升到 ui store（⌘⇧F 与命令面板"搜索笔记"共用 setter）
   const tab = useUiStore((s) => s.sidebarTab);
@@ -26,14 +25,9 @@ export function Sidebar() {
     }
   }, [searchFocusNonce]);
 
-  const repick = async () => {
-    const path = await pickFolder({ directory: true });
-    if (path) await openVault(path);
-  };
-
   return (
     <>
-      <button className="vault-name" title="重新选择文件夹" onClick={repick}>
+      <button className="vault-name" title="重新选择文件夹" onClick={() => void pickAndOpenVault()}>
         {vaultName}
       </button>
       <div className="sidebar-tabs" role="tablist" aria-label="侧栏视图">

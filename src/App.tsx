@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { open as pickFolder } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
 import { AppShell } from "./components/AppShell";
 import { CloseConfirmDialog } from "./components/CloseConfirmDialog";
@@ -11,6 +10,7 @@ import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
+import { pickAndOpenVault } from "./lib/pickVault";
 import { useTabsStore } from "./stores/tabs";
 import { useUiStore } from "./stores/ui";
 import { useWorkspaceStore } from "./stores/workspace";
@@ -18,7 +18,6 @@ import { useWorkspaceStore } from "./stores/workspace";
 export default function App() {
   const vault = useWorkspaceStore((s) => s.vault);
   const error = useWorkspaceStore((s) => s.error);
-  const openVault = useWorkspaceStore((s) => s.openVault);
   // 大纲面板折叠：提升到 ui store（⌘⇧O 与命令面板共用），不持久化（M6 统一 settings 时再定）
   const outlineOpen = useUiStore((s) => s.outlineOpen);
   // 命令面板：null 关闭；⌘⇧P 开 all、⌘P 开 files
@@ -37,18 +36,20 @@ export default function App() {
       // 编辑器统一为 Milkdown（无组件级保存 keymap）后由这里统一处理，
       // 守卫保留以防未来再引入组件级 keymap。
       if (e.defaultPrevented) return;
+      const mod = (e.metaKey || e.ctrlKey) && !e.shiftKey;
+      const modShift = (e.metaKey || e.ctrlKey) && e.shiftKey;
       // ⌘S/ctrl+S 全局保存（Milkdown 无组件级保存 keymap，由这里统一处理）
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "s") {
+      if (mod && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void useTabsStore.getState().saveActive();
       }
       // ⌘⇧O/ctrl+⇧O 折叠/展开右栏大纲
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "o") {
+      if (modShift && e.key.toLowerCase() === "o") {
         e.preventDefault();
         useUiStore.getState().toggleOutline();
       }
       // ⌘⇧F/ctrl+⇧F 切到搜索页签并聚焦输入框
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+      if (modShift && e.key.toLowerCase() === "f") {
         e.preventDefault();
         useUiStore.getState().focusSearch();
       }
@@ -62,17 +63,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const pick = async () => {
-    const path = await pickFolder({ directory: true });
-    if (path) await openVault(path);
-  };
-
   const emptyState = (
     <div className="empty-state">
       <FolderOpen size={48} strokeWidth={1.5} />
       <p>打开一个文件夹，开始笔记</p>
       {error && <p className="error-text">{error}</p>}
-      <button className="btn-primary" onClick={pick}>选择文件夹…</button>
+      <button className="btn-primary" onClick={() => void pickAndOpenVault()}>选择文件夹…</button>
     </div>
   );
 
