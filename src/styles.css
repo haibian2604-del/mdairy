@@ -1,6 +1,8 @@
 /* CSS @import 必须位于文件顶部（其他规则之前），Vite 才能正确内联处理 */
 @import "katex/dist/katex.min.css";
 @import "highlight.js/styles/github.css";
+@import "@milkdown/crepe/theme/common/style.css";
+@import "@milkdown/crepe/theme/frame.css";
 
 :root {
   --bg: #fafaf9; --bg-sidebar: #f5f5f4; --bg-inset: #f5f5f4;
@@ -135,6 +137,42 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .preview-pane .mermaid-error-msg { color: var(--danger); font-size: 13px; }
 .split { display: flex; min-height: 0; flex: 1; }
 .split > * { min-width: 0; }
+
+/* Milkdown WYSIWYG 编辑器（Crepe frame 主题） */
+.milkdown-pane { flex: 1; min-height: 0; overflow-y: auto; }
+.milkdown-pane .milkdown { min-height: 100%; background: var(--bg); color: var(--fg); }
+
+/* Crepe 暗色适配：frame-dark 主题与 frame 同为 `.milkdown` 作用域、先后引入无法按系统亮暗切换
+   （@import 无法嵌套进 media），故照 frame-dark 变量手写暗色覆盖，
+   选择器 :root:not([data-theme="light"]) 提升优先级并与 hljs/token 切换机制一致 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .milkdown {
+    --crepe-color-background: #1a1a1a;
+    --crepe-color-on-background: #e6e6e6;
+    --crepe-color-surface: #121212;
+    --crepe-color-surface-low: #1c1c1c;
+    --crepe-color-on-surface: #d1d1d1;
+    --crepe-color-on-surface-variant: #a9a9a9;
+    --crepe-color-outline: #757575;
+    --crepe-color-primary: #b5b5b5;
+    --crepe-color-secondary: #4d4d4d;
+    --crepe-color-on-secondary: #d6d6d6;
+    --crepe-color-inverse: #e5e5e5;
+    --crepe-color-on-inverse: #2a2a2a;
+    --crepe-color-inline-code: #ff6666;
+    --crepe-color-error: #ff6666;
+    --crepe-color-hover: #232323;
+    --crepe-color-selected: #2f2f2f;
+    --crepe-color-inline-area: #2b2b2b;
+    --crepe-shadow-1:
+      0px 1px 2px 0px rgba(255, 255, 255, 0.3),
+      0px 1px 3px 1px rgba(255, 255, 255, 0.15);
+    --crepe-shadow-2:
+      0px 1px 2px 0px rgba(255, 255, 255, 0.3),
+      0px 2px 6px 2px rgba(255, 255, 255, 0.15);
+  }
+  :root:not([data-theme="light"]) .milkdown-pane .milkdown { background: transparent; }
+}
 
 /* 视图模式分段控件（三等宽按钮，aria-pressed 当前态抬升） */
 .view-switch { margin-left: auto; display: flex; gap: 2px; background: var(--bg-inset); border-radius: 6px; padding: 2px; }

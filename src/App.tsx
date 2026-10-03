@@ -5,6 +5,7 @@ import { AppShell } from "./components/AppShell";
 import { CloseConfirmDialog } from "./components/CloseConfirmDialog";
 import { ConflictDialog } from "./components/ConflictDialog";
 import { EditorPane } from "./components/EditorPane";
+import { MilkdownPane } from "./components/MilkdownPane";
 import { PreviewPane } from "./components/PreviewPane";
 import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
@@ -60,7 +61,7 @@ export default function App() {
               <EditorPane />
             ) : viewMode === "split" ? (
               <div className="split">
-                <EditorPane />
+                <MilkdownPane />
                 <PreviewPane />
               </div>
             ) : (
