@@ -3,6 +3,7 @@ import { open as pickFolder } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
 import { AppShell } from "./components/AppShell";
 import { CloseConfirmDialog } from "./components/CloseConfirmDialog";
+import { CommandPalette } from "./components/CommandPalette";
 import { ConflictDialog } from "./components/ConflictDialog";
 import { MilkdownPane } from "./components/MilkdownPane";
 import { OutlinePanel } from "./components/OutlinePanel";
@@ -11,14 +12,17 @@ import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
 import { useTabsStore } from "./stores/tabs";
+import { useUiStore } from "./stores/ui";
 import { useWorkspaceStore } from "./stores/workspace";
 
 export default function App() {
   const vault = useWorkspaceStore((s) => s.vault);
   const error = useWorkspaceStore((s) => s.error);
   const openVault = useWorkspaceStore((s) => s.openVault);
-  // 大纲面板折叠：App 内 state，不持久化（M6 统一 settings 时再定）
-  const [outlineOpen, setOutlineOpen] = useState(true);
+  // 大纲面板折叠：提升到 ui store（⌘⇧O 与命令面板共用），不持久化（M6 统一 settings 时再定）
+  const outlineOpen = useUiStore((s) => s.outlineOpen);
+  // 命令面板：null 关闭；⌘⇧P 开 all、⌘P 开 files
+  const [paletteMode, setPaletteMode] = useState<"all" | "files" | null>(null);
 
   useEffect(() => {
     void useWorkspaceStore.getState().restoreLastVault();
@@ -26,7 +30,7 @@ export default function App() {
   useVaultEvents(vault);
 
   // 全局快捷键统一收敛在这一个 window keydown 处理器：
-  // ⌘S 保存；⌘⇧O 折叠/展开大纲；⌘⇧F 聚焦搜索与 ⌘⇧P/⌘P 命令面板由 Task 4 接入。
+  // ⌘S 保存；⌘⇧O 折叠/展开大纲；⌘⇧F 聚焦搜索；⌘⇧P/⌘P 命令面板。
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // 防御纵深：若组件内快捷键已处理（defaultPrevented）则跳过，避免双重保存。
@@ -41,10 +45,18 @@ export default function App() {
       // ⌘⇧O/ctrl+⇧O 折叠/展开右栏大纲
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "o") {
         e.preventDefault();
-        setOutlineOpen((v) => !v);
+        useUiStore.getState().toggleOutline();
       }
-      // ⌘⇧P / ⌘P：命令面板快捷键——命令面板 Task 4 落地时在此接入（占位不发）。
-      // ⌘⇧F：聚焦搜索输入框，随 Task 4 的命令面板一起接线。
+      // ⌘⇧F/ctrl+⇧F 切到搜索页签并聚焦输入框
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        useUiStore.getState().focusSearch();
+      }
+      // ⌘⇧P 开命令面板（all）/ ⌘P 开文件模式（preventDefault 拦截 WebView 默认打印）
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        setPaletteMode(e.shiftKey ? "all" : "files");
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -79,6 +91,7 @@ export default function App() {
       />
       <ConflictDialog />
       <CloseConfirmDialog />
+      {paletteMode && <CommandPalette mode={paletteMode} onClose={() => setPaletteMode(null)} />}
     </>
   );
 }
