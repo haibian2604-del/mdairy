@@ -14,6 +14,6 @@ export function useOpenFile() {
     if (!vault) return;
     const res = await api.readFile(vault, rel);
     const name = rel.split("/").pop() ?? rel;
-    open({ rel, name, content: res.content, mtimeMillis: res.mtimeMillis });
+    open({ rel, name, content: res.content, mtimeMillis: res.mtimeMillis, encoding: res.encoding });
   }, []);
 }

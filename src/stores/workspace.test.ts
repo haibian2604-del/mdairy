@@ -36,4 +36,12 @@ describe("workspaceStore", () => {
     await useWorkspaceStore.getState().restoreLastVault();
     expect(useWorkspaceStore.getState().vault).toBe("/canon/last-vault");
   });
+
+  it("refreshTree 刷新文件树，失败保持旧树", async () => {
+    const { api } = await import("../api");
+    await useWorkspaceStore.getState().openVault("v");
+    vi.mocked(api.listTree).mockRejectedValueOnce("io error");
+    await useWorkspaceStore.getState().refreshTree();
+    expect(useWorkspaceStore.getState().tree).toHaveLength(1); // 保持 openVault 时的树
+  });
 });

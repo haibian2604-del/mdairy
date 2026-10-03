@@ -7,9 +7,10 @@ interface WorkspaceState {
   error: string | null;
   openVault: (path: string) => Promise<void>;
   restoreLastVault: () => Promise<void>;
+  refreshTree: () => Promise<void>;
 }
 
-export const useWorkspaceStore = create<WorkspaceState>((set) => ({
+export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   vault: null,
   tree: [],
   error: null,
@@ -26,5 +27,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   restoreLastVault: async () => {
     const last = await api.getLastVault().catch(() => null);
     if (last) await useWorkspaceStore.getState().openVault(last);
+  },
+  refreshTree: async () => {
+    const vault = get().vault;
+    if (!vault) return;
+    try {
+      set({ tree: await api.listTree(vault) });
+    } catch {
+      /* 保持旧树 */
+    }
   },
 }));
