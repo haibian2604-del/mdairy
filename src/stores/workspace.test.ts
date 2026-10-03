@@ -13,7 +13,7 @@ vi.mock("../api", () => ({
 import { useWorkspaceStore } from "./workspace";
 
 describe("workspaceStore", () => {
-  beforeEach(() => useWorkspaceStore.setState({ vault: null, tree: [], loading: false, error: null }));
+  beforeEach(() => useWorkspaceStore.setState({ vault: null, tree: [], error: null }));
 
   it("openVault 规范化路径并加载文件树", async () => {
     await useWorkspaceStore.getState().openVault("my-vault");

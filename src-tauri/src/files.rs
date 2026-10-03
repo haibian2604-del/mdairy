@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum TreeNode {
     Dir { name: String, rel: String, children: Vec<TreeNode> },
@@ -46,8 +46,7 @@ pub fn resolve_secure(vault: &str, rel: &str) -> Result<PathBuf, String> {
 }
 
 pub fn build_tree(root: &Path, dir: &Path) -> Result<Vec<TreeNode>, String> {
-    let mut dirs: Vec<TreeNode> = Vec::new();
-    let mut files: Vec<TreeNode> = Vec::new();
+    let mut nodes: Vec<(u8, TreeNode)> = Vec::new();
     for e in fs::read_dir(dir).map_err(|e| e.to_string())? {
         let e = e.map_err(|e| e.to_string())?;
         let name = e.file_name().to_string_lossy().to_string();
@@ -56,46 +55,44 @@ pub fn build_tree(root: &Path, dir: &Path) -> Result<Vec<TreeNode>, String> {
         }
         let p = e.path();
         if p.is_dir() {
-            dirs.push(TreeNode::Dir {
+            nodes.push((0, TreeNode::Dir {
                 name: name.clone(),
                 rel: rel_of(root, &p),
                 children: build_tree(root, &p)?,
-            });
+            }));
         } else if name.to_lowercase().ends_with(".md") {
-            files.push(TreeNode::File { name, rel: rel_of(root, &p) });
+            nodes.push((1, TreeNode::File { name, rel: rel_of(root, &p) }));
         }
     }
-    dirs.sort_by(|a, b| match (a, b) {
-        (TreeNode::Dir { name: an, .. }, TreeNode::Dir { name: bn, .. }) => an.cmp(bn),
-        _ => std::cmp::Ordering::Equal,
-    });
-    files.sort_by(|a, b| match (a, b) {
-        (TreeNode::File { name: an, .. }, TreeNode::File { name: bn, .. }) => an.cmp(bn),
-        _ => std::cmp::Ordering::Equal,
-    });
-    dirs.extend(files);
-    Ok(dirs)
+    nodes.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| node_name(&a.1).cmp(node_name(&b.1))));
+    Ok(nodes.into_iter().map(|(_, n)| n).collect())
+}
+
+fn node_name(n: &TreeNode) -> &str {
+    match n {
+        TreeNode::Dir { name, .. } | TreeNode::File { name, .. } => name,
+    }
+}
+
+fn read_content(p: &Path) -> Result<FileContent, String> {
+    let bytes = fs::read(p).map_err(|e| e.to_string())?;
+    Ok(FileContent {
+        content: String::from_utf8_lossy(&bytes).into_owned(),
+        mtime_millis: file_mtime(p),
+    })
 }
 
 #[tauri::command]
 pub fn read_file(vault: &str, rel: &str) -> Result<FileContent, String> {
     let p = resolve_secure(vault, rel)?;
-    let bytes = fs::read(&p).map_err(|e| e.to_string())?;
-    Ok(FileContent {
-        content: String::from_utf8_lossy(&bytes).into_owned(),
-        mtime_millis: file_mtime(&p),
-    })
+    read_content(&p)
 }
 
 #[tauri::command]
 pub fn save_file(vault: &str, rel: &str, content: &str) -> Result<FileContent, String> {
     let p = resolve_secure(vault, rel)?;
     fs::write(&p, content).map_err(|e| e.to_string())?;
-    let bytes = fs::read(&p).map_err(|e| e.to_string())?;
-    Ok(FileContent {
-        content: String::from_utf8_lossy(&bytes).into_owned(),
-        mtime_millis: file_mtime(&p),
-    })
+    read_content(&p)
 }
 
 #[tauri::command]

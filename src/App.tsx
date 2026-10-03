@@ -33,7 +33,6 @@ export default function App() {
 
   return (
     <AppShell
-      hasSidebar={!!vault}
       sidebar={vault ? <Sidebar /> : null}
       main={vault ? (
         <>

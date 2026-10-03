@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
-export function AppShell({ sidebar, main, statusBar, hasSidebar }: {
-  sidebar: ReactNode; main: ReactNode; statusBar: ReactNode; hasSidebar: boolean;
+export function AppShell({ sidebar, main, statusBar }: {
+  sidebar: ReactNode; main: ReactNode; statusBar: ReactNode;
 }) {
+  const hasSidebar = sidebar != null;
   return (
     <div className={`app-shell ${hasSidebar ? "" : "no-vault"}`}>
       {hasSidebar && <aside className="sidebar">{sidebar}</aside>}
