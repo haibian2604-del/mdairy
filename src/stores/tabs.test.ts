@@ -13,7 +13,7 @@ import { useWorkspaceStore } from "./workspace";
 
 describe("tabsStore", () => {
   beforeEach(() => {
-    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null });
+    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null, pendingJump: null });
     useWorkspaceStore.setState({ vault: "/canon/v" });
   });
 
@@ -55,11 +55,29 @@ describe("tabsStore", () => {
     useTabsStore.getState().open({ rel: "a.md", name: "a.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });
     await expect(useTabsStore.getState().saveActive()).resolves.toBeUndefined();
   });
+
+  it("requestJump 未开先 open 再置 pendingJump，已开 setActive；consumeJump 清空", async () => {
+    const { api } = await import("../api");
+    vi.mocked(api.readFile).mockResolvedValueOnce({ content: "第一行\n苹果行", mtimeMillis: 5, encoding: "UTF-8" });
+    await useTabsStore.getState().requestJump("hit.md", 1); // 未开：读文件后 open
+    expect(useTabsStore.getState().tabs.map((t) => t.rel)).toEqual(["hit.md"]);
+    expect(useTabsStore.getState().activeRel).toBe("hit.md");
+    expect(useTabsStore.getState().pendingJump).toEqual({ rel: "hit.md", line: 1 });
+
+    useTabsStore.getState().open({ rel: "b.md", name: "b", content: "2", mtimeMillis: 1, encoding: "UTF-8" });
+    await useTabsStore.getState().requestJump("hit.md", 0); // 已开：只 setActive，不再读文件
+    expect(vi.mocked(api.readFile)).toHaveBeenCalledTimes(1);
+    expect(useTabsStore.getState().activeRel).toBe("hit.md");
+    expect(useTabsStore.getState().pendingJump).toEqual({ rel: "hit.md", line: 0 });
+
+    useTabsStore.getState().consumeJump();
+    expect(useTabsStore.getState().pendingJump).toBeNull();
+  });
 });
 
 describe("tabsStore v2: 冲突状态机 / 快照保存 / 关闭确认", () => {
   beforeEach(() => {
-    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null });
+    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null, pendingJump: null });
     useWorkspaceStore.setState({ vault: "/canon/v" });
   });
 

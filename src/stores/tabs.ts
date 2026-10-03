@@ -17,6 +17,12 @@ export interface ExternalConflict {
   reason: "modified" | "deleted";
 }
 
+/** 搜索命中跳转：打开/聚焦目标文件后待 MilkdownPane 消费的定位请求 */
+export interface PendingJump {
+  rel: string;
+  line: number;
+}
+
 interface OpenArgs {
   rel: string;
   name: string;
@@ -30,6 +36,7 @@ interface TabsState {
   activeRel: string | null;
   conflict: ExternalConflict | null;
   pendingCloseRel: string | null;
+  pendingJump: PendingJump | null;
   open: (t: OpenArgs) => void;
   close: (rel: string) => void;
   setActive: (rel: string) => void;
@@ -44,6 +51,8 @@ interface TabsState {
   discardClose: () => void;
   cancelClose: () => void;
   handleExternalChanges: (paths: string[]) => Promise<void>;
+  requestJump: (rel: string, line: number) => Promise<void>;
+  consumeJump: () => void;
 }
 
 export const useTabsStore = create<TabsState>((set, get) => ({
@@ -51,6 +60,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   activeRel: null,
   conflict: null,
   pendingCloseRel: null,
+  pendingJump: null,
   open: (t) =>
     set((s) => {
       if (s.tabs.some((x) => x.rel === t.rel)) return { activeRel: t.rel };
@@ -227,4 +237,29 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       }
     }
   },
+  // 打开（未开时先读文件）或聚焦目标文件，然后记下待消费的跳转定位；
+  // MilkdownPane 消费后 consumeJump 置 null
+  requestJump: async (rel, line) => {
+    if (!get().tabs.some((x) => x.rel === rel)) {
+      const vault = useWorkspaceStore.getState().vault;
+      if (!vault) return;
+      let res;
+      try {
+        res = await api.readFile(vault, rel);
+      } catch {
+        return; // 文件已不存在等 → 不跳转
+      }
+      get().open({
+        rel,
+        name: rel.split("/").pop() ?? rel,
+        content: res.content,
+        mtimeMillis: res.mtimeMillis,
+        encoding: res.encoding,
+      });
+    } else {
+      get().setActive(rel);
+    }
+    set({ pendingJump: { rel, line } });
+  },
+  consumeJump: () => set({ pendingJump: null }),
 }));
