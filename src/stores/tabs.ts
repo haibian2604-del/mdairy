@@ -94,7 +94,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       res = await api.saveFile(vault, tab.rel, tab.content, {
         encoding: tab.encoding,
         // 跳过校验时显式传 null（api 层 null 即不做 mtime 比对）
-        expectedMtimeMillis: (skipMtimeCheck ? null : tab.mtimeMillis) as number | undefined,
+        expectedMtimeMillis: skipMtimeCheck ? null : tab.mtimeMillis,
       });
     } catch (e) {
       if (String(e).startsWith("外部修改冲突")) {

@@ -9,7 +9,11 @@ vi.mock("./api", () => ({
     listTree: vi.fn(async () => []),
     readFile: vi.fn(),
     saveFile: vi.fn(),
+    watchVault: vi.fn(async () => {}),
   },
+}));
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: vi.fn(async () => () => {}),
 }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn() }));
 

@@ -15,10 +15,11 @@ export const api = {
   getLastVault: () => invoke<string | null>("get_last_vault"),
   listTree: (vault: string) => invoke<TreeNode[]>("list_tree", { vault }),
   readFile: (vault: string, rel: string) => invoke<FileContent>("read_file", { vault, rel }),
-  saveFile: (vault: string, rel: string, content: string, opts?: { encoding?: string; expectedMtimeMillis?: number }) =>
+  saveFile: (vault: string, rel: string, content: string, opts?: { encoding?: string; expectedMtimeMillis?: number | null }) =>
     invoke<FileContent>("save_file", {
       vault, rel, content,
       encoding: opts?.encoding ?? null,
       expectedMtimeMillis: opts?.expectedMtimeMillis ?? null,
     }),
+  watchVault: (vault: string) => invoke<void>("watch_vault", { vault }),
 };
