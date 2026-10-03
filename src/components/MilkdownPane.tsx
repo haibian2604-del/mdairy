@@ -66,11 +66,30 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 切换标签/外部重载：rel 变化，或（非自身回写的）content 变化 → replaceAll
+  useEffect(() => {
+    const crepe = crepeRef.current;
+    if (!crepe || !tab) return;
+    const loaded = loadedRef.current;
+    // selfEcho：store 中的 content 即编辑器最新内容（编辑器自身回写），无需替换
+    if (loaded.rel === activeRel && loaded.content === tab.content) return;
+    loadedRef.current = { rel: activeRel, content: tab.content };
+    void creatingRef.current
+      ?.then(() => {
+        crepe.editor.action(replaceAll(toEditableMarkdown(tab.content, vault)));
+        snapshotRef.current = crepe.getMarkdown();
+      })
+      .catch(() => {}); // 卸载竞态下 editor 可能已销毁，忽略清理期错误
+  }, [activeRel, tab?.content]);
+
   // 大纲/搜索命中跳转定位：pendingJump.rel 匹配当前 tab 时，把 .ProseMirror 的
   // 第 min(line, 块数-1) 个直接子元素（块级节点）滚入视口，然后 consumeJump。
-  // 时序：首建/replaceAll 均异步（create().then），跳转 action 必须等编辑器就绪，
-  // 故挂在 creatingRef 之后；.ProseMirror 也在 then 里查（create 未完成时元素尚未挂载），
-  // 找不到则静默放弃（consumeJump 照做）。行号→块序为近似定位，允许 ±1 块误差。
+  // 时序：① 必须等编辑器就绪——action 挂在 creatingRef 之后；.ProseMirror 也在
+  // then 里查（create 未完成时元素尚未挂载），找不到则静默放弃（consumeJump 照做）。
+  // ② 本 effect 必须声明在上方 replaceAll effect 之后：requestJump 的 setActive 与
+  // set(pendingJump) 同一 commit 批处理时，两个 effect 的 .then 链按声明序 FIFO，
+  // 跳转若先注册会在旧文档上滚动、随后被 replaceAll 复位——跳转静默丢失。
+  // 行号→块序为近似定位，允许 ±1 块误差。
   useEffect(() => {
     if (!pendingJump || pendingJump.rel !== activeRel) return;
     const jump = pendingJump;
@@ -94,22 +113,6 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
       stale = true;
     };
   }, [pendingJump, activeRel]);
-
-  // 切换标签/外部重载：rel 变化，或（非自身回写的）content 变化 → replaceAll
-  useEffect(() => {
-    const crepe = crepeRef.current;
-    if (!crepe || !tab) return;
-    const loaded = loadedRef.current;
-    // selfEcho：store 中的 content 即编辑器最新内容（编辑器自身回写），无需替换
-    if (loaded.rel === activeRel && loaded.content === tab.content) return;
-    loadedRef.current = { rel: activeRel, content: tab.content };
-    void creatingRef.current
-      ?.then(() => {
-        crepe.editor.action(replaceAll(toEditableMarkdown(tab.content, vault)));
-        snapshotRef.current = crepe.getMarkdown();
-      })
-      .catch(() => {}); // 卸载竞态下 editor 可能已销毁，忽略清理期错误
-  }, [activeRel, tab?.content]);
 
   return <div ref={containerRef} className="milkdown-pane" />;
 }
