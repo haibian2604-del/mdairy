@@ -1,8 +1,15 @@
 import MarkdownIt from "markdown-it";
 import taskLists from "@hedgedoc/markdown-it-task-lists";
-import katexPlugin from "@vscode/markdown-it-katex";
+import katexImport from "@vscode/markdown-it-katex";
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
+
+// CJS 互操作归一：浏览器端 vite 预打包下 default 是整个 exports 对象
+// （vitest SSR interop 则直接给函数），不做归一会导致 md.use 崩溃、整页白屏。
+const katexPlugin =
+  typeof katexImport === "function"
+    ? katexImport
+    : ((katexImport as unknown as { default: typeof katexImport }).default);
 
 export const MERMAID_PLACEHOLDER_CLASS = "mermaid-block";
 
