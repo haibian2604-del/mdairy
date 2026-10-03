@@ -1,0 +1,2 @@
+patchedDependencies:
+  '@hedgedoc/markdown-it-task-lists': patches/@hedgedoc__markdown-it-task-lists.patch
