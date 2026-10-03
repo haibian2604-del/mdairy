@@ -12,15 +12,6 @@ importers:
 
   .:
     dependencies:
-      '@codemirror/lang-markdown':
-        specifier: ^6.5.2
-        version: 6.5.2
-      '@codemirror/state':
-        specifier: ^6.7.6
-        version: 6.7.6
-      '@codemirror/view':
-        specifier: ^6.43.13
-        version: 6.43.13
       '@hedgedoc/markdown-it-task-lists':
         specifier: ^2.0.1
         version: 2.0.1(patch_hash=b131c7b147939ac2421f55fdd0468631524ca353c4170b158b86bcdbcfcecc72)(markdown-it@14.3.2)
@@ -42,9 +33,6 @@ importers:
       '@vscode/markdown-it-katex':
         specifier: ^1.1.2
         version: 1.1.2
-      codemirror:
-        specifier: ^6.0.2
-        version: 6.0.2
       dompurify:
         specifier: ^3.4.16
         version: 3.4.16

@@ -11,9 +11,6 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@codemirror/lang-markdown": "^6.5.2",
-    "@codemirror/state": "^6.7.6",
-    "@codemirror/view": "^6.43.13",
     "@hedgedoc/markdown-it-task-lists": "^2.0.1",
     "@milkdown/crepe": "^7.22.2",
     "@milkdown/kit": "^7.22.2",
@@ -21,7 +18,6 @@
     "@tauri-apps/plugin-dialog": "^2.8.1",
     "@tauri-apps/plugin-opener": "^2",
     "@vscode/markdown-it-katex": "^1.1.2",
-    "codemirror": "^6.0.2",
     "dompurify": "^3.4.16",
     "highlight.js": "^11.12.0",
     "katex": "^0.19.0",

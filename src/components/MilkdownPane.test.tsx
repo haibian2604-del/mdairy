@@ -49,7 +49,7 @@ describe("MilkdownPane", () => {
     crepeInstances.length = 0;
     mockReplaceAll.mockClear();
     markdownUpdatedCb.fn = null;
-    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null, cursorLine: 0 });
+    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null });
   });
 
   it("无 active tab 渲染占位", () => {

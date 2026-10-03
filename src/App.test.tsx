@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./components/EditorPane", () => ({ EditorPane: () => <div>editor-mock</div> }));
 vi.mock("./api", () => ({
   api: {
     setVault: vi.fn(),

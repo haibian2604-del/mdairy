@@ -55,14 +55,6 @@ describe("tabsStore", () => {
     useTabsStore.getState().open({ rel: "a.md", name: "a.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });
     await expect(useTabsStore.getState().saveActive()).resolves.toBeUndefined();
   });
-
-  it("setCursorLine 更新且同值 no-op", () => {
-    useTabsStore.getState().setCursorLine(5);
-    expect(useTabsStore.getState().cursorLine).toBe(5);
-    const before = useTabsStore.getState();
-    useTabsStore.getState().setCursorLine(5);
-    expect(useTabsStore.getState()).toBe(before); // 引用不变，未触发订阅
-  });
 });
 
 describe("tabsStore v2: 冲突状态机 / 快照保存 / 关闭确认", () => {

@@ -4,14 +4,11 @@ import { FolderOpen } from "lucide-react";
 import { AppShell } from "./components/AppShell";
 import { CloseConfirmDialog } from "./components/CloseConfirmDialog";
 import { ConflictDialog } from "./components/ConflictDialog";
-import { EditorPane } from "./components/EditorPane";
 import { MilkdownPane } from "./components/MilkdownPane";
-import { PreviewPane } from "./components/PreviewPane";
 import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
-import { useSettingsStore } from "./stores/settings";
 import { useTabsStore } from "./stores/tabs";
 import { useWorkspaceStore } from "./stores/workspace";
 
@@ -19,7 +16,6 @@ export default function App() {
   const vault = useWorkspaceStore((s) => s.vault);
   const error = useWorkspaceStore((s) => s.error);
   const openVault = useWorkspaceStore((s) => s.openVault);
-  const viewMode = useSettingsStore((s) => s.viewMode);
 
   useEffect(() => {
     void useWorkspaceStore.getState().restoreLastVault();
@@ -28,12 +24,11 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey && !e.shiftKey && e.key.toLowerCase() === "e") {
-        e.preventDefault();
-        useSettingsStore.getState().cycleViewMode();
-      }
-      // ⌘S/ctrl+S 全局保存（与 ⌘E 并列；EditorPane 的 CM6 Mod-s keymap 在 split
-      // 并存期对 MilkdownPane 不生效，由这里兜底）
+      // 防御纵深：若组件内快捷键已处理（defaultPrevented）则跳过，避免双重保存。
+      // 编辑器统一为 Milkdown（无组件级保存 keymap）后由这里统一处理，
+      // 守卫保留以防未来再引入组件级 keymap。
+      if (e.defaultPrevented) return;
+      // ⌘S/ctrl+S 全局保存（Milkdown 无组件级保存 keymap，由这里统一处理）
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void useTabsStore.getState().saveActive();
@@ -64,16 +59,7 @@ export default function App() {
         main={vault ? (
           <>
             <TabBar />
-            {viewMode === "edit" ? (
-              <EditorPane />
-            ) : viewMode === "split" ? (
-              <div className="split">
-                <MilkdownPane />
-                <PreviewPane />
-              </div>
-            ) : (
-              <div className="preview-full"><PreviewPane /></div>
-            )}
+            <MilkdownPane />
           </>
         ) : emptyState}
         statusBar={<StatusBar />}
