@@ -19,7 +19,7 @@ import { api } from "../api";
 describe("searchStore", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    useSearchStore.setState({ query: "", hits: [], searching: false });
+    useSearchStore.setState({ query: "", hits: [], searching: false, scope: null });
     useWorkspaceStore.setState({ vault: "/canon/v", tree: [] });
     vi.mocked(api.searchVault).mockReset();
   });
@@ -32,8 +32,28 @@ describe("searchStore", () => {
     useSearchStore.getState().setQuery("苹果");
     expect(api.searchVault).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(300);
-    expect(api.searchVault).toHaveBeenCalledWith("/canon/v", "苹果");
+    expect(api.searchVault).toHaveBeenCalledWith("/canon/v", "苹果", null);
     expect(useSearchStore.getState().hits).toHaveLength(1);
+  });
+
+  it("范围 = 活动文件所在文件夹；未命名/无活动文件 = 全库", async () => {
+    vi.mocked(api.searchVault).mockResolvedValue([]);
+    const { useTabsStore } = await import("./tabs");
+    useTabsStore.setState({
+      tabs: [{ rel: "日记/2026/a.md", name: "a", content: "", savedContent: "", mtimeMillis: 1, encoding: "UTF-8", overrideExternal: false }],
+      activeRel: "日记/2026/a.md",
+    });
+    useSearchStore.getState().setQuery("苹果");
+    await vi.advanceTimersByTimeAsync(300);
+    expect(api.searchVault).toHaveBeenLastCalledWith("/canon/v", "苹果", "日记/2026");
+
+    useTabsStore.setState({
+      tabs: [{ rel: "~untitled-1", name: "未命名", content: "", savedContent: "", mtimeMillis: 0, encoding: "UTF-8", overrideExternal: false, untitled: true }],
+      activeRel: "~untitled-1",
+    });
+    useSearchStore.getState().setQuery("苹果");
+    await vi.advanceTimersByTimeAsync(300);
+    expect(api.searchVault).toHaveBeenLastCalledWith("/canon/v", "苹果", null);
   });
 
   it("乱序响应以最后一次 query 为准", async () => {

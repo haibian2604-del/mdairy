@@ -17,8 +17,8 @@ export function MilkdownPane() {
   const vault = useWorkspaceStore((s) => s.vault);
   const tab = useTabsStore((s) => s.tabs.find((t) => t.rel === s.activeRel));
   // 无 tab 时不渲染编辑器容器：内层编辑器随 tab 打开挂载、关闭卸载，
-  // 避免"挂载时无 tab 导致编辑器永不创建"的时序问题
-  if (!tab) return <div className="editor-empty">从左侧选择一个文件</div>;
+  // 避免"挂载时无 tab 导致编辑器永不创建"的时序问题。对标 Typora：空白编辑区，无占位文字。
+  if (!tab) return <div className="editor-empty" />;
   // 进编辑器的永远是可编辑形态（相对路径 → asset URL）；store/磁盘始终保持存储形态
   return <MilkdownEditor defaultValue={toEditableMarkdown(tab.content, vault ?? "")} vault={vault ?? ""} />;
 }
@@ -72,7 +72,12 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
   // 创建一次；replace effect 需等 create() 完成才能 editor.action，故记录 promise
   useEffect(() => {
     if (!containerRef.current || crepeRef.current) return;
-    const crepe = new Crepe({ root: containerRef.current, defaultValue });
+    // 对标 Typora：空文档不放占位文字（Crepe 默认英文 "Please enter..."）
+    const crepe = new Crepe({
+      root: containerRef.current,
+      defaultValue,
+      features: { [Crepe.Feature.Placeholder]: false },
+    });
     crepe.editor.config((ctx) => {
       ctx.update(uploadConfig.key, (prev) => ({ ...prev, uploader }));
     });

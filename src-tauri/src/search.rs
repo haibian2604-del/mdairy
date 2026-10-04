@@ -1,3 +1,4 @@
+use crate::files::{decode, rel_of, skipped};
 use serde::Serialize;
 use std::fs;
 use std::path::Path;
@@ -9,11 +10,6 @@ pub struct SearchHit {
     pub line: u32,
     pub column: u32,
     pub line_text: String,
-}
-
-fn skipped(name: &str) -> bool {
-    // 与 files.rs 的过滤规则保持一致：隐藏文件/_assets/node_modules
-    name.starts_with('.') || name == "_assets" || name == "node_modules"
 }
 
 fn search_dir(root: &Path, dir: &Path, query: &str, out: &mut Vec<SearchHit>, limit: usize) {
@@ -37,13 +33,9 @@ fn search_dir(root: &Path, dir: &Path, query: &str, out: &mut Vec<SearchHit>, li
             search_dir(root, &p, query, out, limit);
         } else if name.to_lowercase().ends_with(".md") {
             let Ok(bytes) = fs::read(&p) else { continue };
-            // 与 files.rs 相同的解码策略：BOM → UTF-8 校验 → 由 files::decode 提供
-            let (text, _) = crate::files::decode_public(&bytes);
-            let rel = p
-                .strip_prefix(root)
-                .unwrap_or(&p)
-                .to_string_lossy()
-                .replace('\\', "/");
+            // 与文件读取同一套解码策略（BOM → UTF-8 → 检测）
+            let (text, _) = decode(&bytes);
+            let rel = rel_of(root, &p);
             let mut per_file = 0;
             for (i, line) in text.lines().enumerate() {
                 if let Some(col) = line.to_lowercase().find(&query.to_lowercase()) {
@@ -64,13 +56,19 @@ fn search_dir(root: &Path, dir: &Path, query: &str, out: &mut Vec<SearchHit>, li
 }
 
 #[tauri::command]
-pub fn search_vault(vault: String, query: String) -> Result<Vec<SearchHit>, String> {
+pub fn search_vault(vault: String, query: String, dir: Option<String>) -> Result<Vec<SearchHit>, String> {
     if query.trim().is_empty() {
         return Ok(vec![]);
     }
     let root = fs::canonicalize(&vault).map_err(|e| e.to_string())?;
+    // 范围收窄：dir = 活动文件所在文件夹（vault 相对路径，含其子目录）；None/空 = 全库。
+    // 复用 resolve_secure 做 `..` 与越界校验，起点必须仍在 vault 内。
+    let start = match dir.as_deref() {
+        Some(d) if !d.is_empty() => Some(crate::files::resolve_secure(&vault, d)?),
+        _ => None,
+    };
     let mut out = Vec::new();
-    search_dir(&root, &root, &query, &mut out, 200);
+    search_dir(&root, &start.unwrap_or_else(|| root.clone()), &query, &mut out, 200);
     Ok(out)
 }
 
@@ -105,7 +103,7 @@ mod tests {
     #[test]
     fn finds_case_insensitive_substring_with_positions() {
         let v = temp_vault();
-        let hits = search_vault(v.to_str().unwrap().to_string(), "苹果".into()).unwrap();
+        let hits = search_vault(v.to_str().unwrap().to_string(), "苹果".into(), None).unwrap();
         assert_eq!(hits.len(), 2);
         assert_eq!(hits[0].rel, "a.md");
         assert_eq!(hits[0].line, 1);
@@ -114,16 +112,31 @@ mod tests {
     }
 
     #[test]
+    fn scoped_dir_limits_hits_to_that_subtree() {
+        let v = temp_vault();
+        let hits = search_vault(v.to_str().unwrap().to_string(), "苹果".into(), Some("sub".into())).unwrap();
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].rel, "sub/b.md");
+    }
+
+    #[test]
+    fn scoped_dir_rejects_traversal() {
+        let v = temp_vault();
+        let hits = search_vault(v.to_str().unwrap().to_string(), "苹果".into(), Some("../etc".into()));
+        assert!(hits.is_err());
+    }
+
+    #[test]
     fn skips_hidden_and_assets_and_node_modules() {
         let v = temp_vault();
-        let hits = search_vault(v.to_str().unwrap().to_string(), "不应命中".into()).unwrap();
+        let hits = search_vault(v.to_str().unwrap().to_string(), "不应命中".into(), None).unwrap();
         assert!(hits.is_empty());
     }
 
     #[test]
     fn empty_query_returns_empty() {
         let v = temp_vault();
-        let hits = search_vault(v.to_str().unwrap().to_string(), "".into()).unwrap();
+        let hits = search_vault(v.to_str().unwrap().to_string(), "".into(), None).unwrap();
         assert!(hits.is_empty());
     }
 }

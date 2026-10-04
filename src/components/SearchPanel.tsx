@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type { SearchHit } from "../api";
 import { byteColumnToCharIndex, useSearchStore } from "../stores/search";
 import { useTabsStore } from "../stores/tabs";
@@ -30,11 +30,20 @@ export function SearchPanel() {
   const query = useSearchStore((s) => s.query);
   const hits = useSearchStore((s) => s.hits);
   const searching = useSearchStore((s) => s.searching);
+  const scope = useSearchStore((s) => s.scope);
   const setQuery = useSearchStore((s) => s.setQuery);
   const requestJump = useTabsStore((s) => s.requestJump);
+  const activeRel = useTabsStore((s) => s.activeRel);
+
+  // 切到其他文件夹的文件时按新范围重搜（有输入才重搜）
+  useEffect(() => {
+    const q = useSearchStore.getState().query;
+    if (q.trim()) setQuery(q);
+  }, [activeRel, setQuery]);
 
   const trimmed = query.trim();
   const matchLen = Array.from(trimmed).length;
+  const scopeText = scope ? `范围 ${scope}/` : "范围 全库";
 
   // 按文件分组：rel → 命中行列表（保持返回顺序）
   const groups = useMemo(() => {
@@ -52,13 +61,16 @@ export function SearchPanel() {
       <input
         className="search-input"
         type="text"
-        placeholder="搜索全部笔记…"
+        placeholder="搜索当前文件夹…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
       {trimmed === "" ? null : (
         <>
-          {hits.length > 0 && <div className="search-summary">{hits.length} 处</div>}
+          <div className="search-summary">
+            {scopeText}
+            {hits.length > 0 && ` · ${hits.length} 处`}
+          </div>
           {hits.length === 0 && !searching && (
             <div className="search-empty">没有找到与 “{trimmed}” 匹配的内容</div>
           )}

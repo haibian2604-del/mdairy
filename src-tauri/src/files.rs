@@ -19,12 +19,12 @@ pub struct FileContent {
     pub encoding: String,
 }
 
-fn rel_of(root: &Path, p: &Path) -> String {
+pub(crate) fn rel_of(root: &Path, p: &Path) -> String {
     let rel = p.strip_prefix(root).unwrap_or(p);
     rel.to_string_lossy().replace('\\', "/")
 }
 
-fn skipped(name: &str) -> bool {
+pub(crate) fn skipped(name: &str) -> bool {
     name.starts_with('.') || name == "_assets" || name == "node_modules"
 }
 
@@ -77,7 +77,7 @@ fn node_name(n: &TreeNode) -> &str {
     }
 }
 
-fn decode(bytes: &[u8]) -> (String, &'static Encoding) {
+pub(crate) fn decode(bytes: &[u8]) -> (String, &'static Encoding) {
     if let Some((enc, _bom_len)) = Encoding::for_bom(bytes) {
         return (enc.decode(bytes).0.into_owned(), enc);
     }
@@ -88,11 +88,6 @@ fn decode(bytes: &[u8]) -> (String, &'static Encoding) {
     det.feed(bytes, true);
     let enc = det.guess(None, Utf8Detection::Allow);
     (enc.decode(bytes).0.into_owned(), enc)
-}
-
-/// 供其他模块（如 search.rs）复用既有解码策略的公开包装，直接转发私有 `decode`。
-pub fn decode_public(bytes: &[u8]) -> (String, &'static encoding_rs::Encoding) {
-    decode(bytes)
 }
 
 fn encode(content: &str, encoding: &str) -> Vec<u8> {
@@ -155,6 +150,15 @@ pub fn save_file(
     fs::write(&p, encode(content, encoding.as_deref().unwrap_or("UTF-8")))
         .map_err(|e| e.to_string())?;
     read_content(&p)
+}
+
+/// 未命名缓冲区保存到 vault 外时的落盘命令。路径来自系统保存对话框（用户显式选择），
+/// 故不做 vault 限制；返回新文件 mtime 供前端记录。
+#[tauri::command]
+pub fn save_new_file(path: String, content: String) -> Result<u64, String> {
+    let p = PathBuf::from(&path);
+    fs::write(&p, content).map_err(|e| e.to_string())?;
+    Ok(file_mtime(&p))
 }
 
 #[tauri::command]

@@ -1,23 +1,23 @@
 import { useEffect, useRef } from "react";
 import { FileTree } from "./FileTree";
+import { OutlinePanel } from "./OutlinePanel";
 import { SearchPanel } from "./SearchPanel";
-import { useOpenFile } from "../hooks/useOpenFile";
 import { pickAndOpenVault } from "../lib/pickVault";
+import { useTabsStore } from "../stores/tabs";
 import { useUiStore } from "../stores/ui";
 import { useWorkspaceStore } from "../stores/workspace";
 
+/** 侧栏内容：视图选择已移至 macOS 菜单栏 Sidebar（文件/搜索/大纲），此处只按 store 状态渲染 */
 export function Sidebar() {
   const vault = useWorkspaceStore((s) => s.vault);
   const tree = useWorkspaceStore((s) => s.tree);
-  const onOpenFile = useOpenFile();
-  // 页签 state 提升到 ui store（⌘⇧F 与命令面板"搜索笔记"共用 setter）
+  const onOpenFile = (rel: string) => void useTabsStore.getState().openOrFocus(rel);
   const tab = useUiStore((s) => s.sidebarTab);
-  const setTab = useUiStore((s) => s.setSidebarTab);
   const searchFocusNonce = useUiStore((s) => s.searchFocusNonce);
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const vaultName = vault?.split("/").pop() ?? "";
 
-  // 聚焦信号：⌘⇧F / 命令面板切到搜索页签后聚焦输入框
+  // 聚焦信号：⌘⇧F / 命令面板切到搜索视图后聚焦输入框
   // （SearchPanel 本体不改，经容器 DOM 聚焦其 .search-input）
   useEffect(() => {
     if (searchFocusNonce > 0) {
@@ -30,30 +30,14 @@ export function Sidebar() {
       <button className="vault-name" title="重新选择文件夹" onClick={() => void pickAndOpenVault()}>
         {vaultName}
       </button>
-      <div className="sidebar-tabs" role="tablist" aria-label="侧栏视图">
-        <button
-          role="tab"
-          aria-selected={tab === "files"}
-          className="sidebar-tab"
-          onClick={() => setTab("files")}
-        >
-          文件
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "search"}
-          className="sidebar-tab"
-          onClick={() => setTab("search")}
-        >
-          搜索
-        </button>
-      </div>
       {tab === "files" ? (
         <FileTree nodes={tree} onOpenFile={onOpenFile} />
-      ) : (
+      ) : tab === "search" ? (
         <div ref={searchWrapRef}>
           <SearchPanel />
         </div>
+      ) : (
+        <OutlinePanel />
       )}
     </>
   );

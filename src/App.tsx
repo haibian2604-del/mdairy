@@ -1,32 +1,59 @@
 import { useEffect, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { FolderOpen } from "lucide-react";
+import { api } from "./api";
 import { AppShell } from "./components/AppShell";
 import { CloseConfirmDialog } from "./components/CloseConfirmDialog";
 import { CommandPalette } from "./components/CommandPalette";
 import { ConflictDialog } from "./components/ConflictDialog";
 import { MilkdownPane } from "./components/MilkdownPane";
-import { OutlinePanel } from "./components/OutlinePanel";
 import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
 import { pickAndOpenVault } from "./lib/pickVault";
+import type { ThemeMode } from "./stores/settings";
 import { useSettingsStore } from "./stores/settings";
 import { useTabsStore } from "./stores/tabs";
-import { useUiStore } from "./stores/ui";
+import { useUiStore, type SidebarTab } from "./stores/ui";
 import { useWorkspaceStore } from "./stores/workspace";
 
 export default function App() {
   const vault = useWorkspaceStore((s) => s.vault);
   const error = useWorkspaceStore((s) => s.error);
-  // 大纲面板折叠：提升到 ui store（⌘⇧O 与命令面板共用），不持久化（M6 统一 settings 时再定）
-  const outlineOpen = useUiStore((s) => s.outlineOpen);
+  // 侧栏显隐：提升到 ui store（⌘⇧O、TabBar 按钮、菜单/Sidebar 子菜单共用），不持久化
+  const sidebarOpen = useUiStore((s) => s.sidebarOpen);
+  const sidebarTab = useUiStore((s) => s.sidebarTab);
   // 命令面板：null 关闭；⌘⇧P 开 all、⌘P 开 files
   const [paletteMode, setPaletteMode] = useState<"all" | "files" | null>(null);
 
   useEffect(() => {
+    // 启动即给一个 Typora 式未命名缓冲区（无 vault 也开，⌘S 时再引导选择位置）。
+    // 守卫幂等：StrictMode 下 effect 双跑不重复开（store 跨卸载保留）
+    if (useTabsStore.getState().tabs.length === 0) useTabsStore.getState().newUntitled();
     void useWorkspaceStore.getState().restoreLastVault();
   }, []);
+  // 顶部菜单（Rust 侧）点选 → 同步 store（与状态栏按钮共用一套状态）。
+  // listen 异步注册，须带清理：StrictMode 双挂载会注册两份监听器，
+  // "再点当前项=隐藏"这类非幂等动作就会被一次点击触发两次（表现为点了没反应且勾选消失）。
+  useEffect(() => {
+    let disposed = false;
+    const unlistens: Array<() => void> = [];
+    void listen<ThemeMode>("theme-menu", (e) => useSettingsStore.getState().setThemeMode(e.payload)).then(
+      (un) => { if (disposed) un(); else unlistens.push(un); },
+    );
+    void listen<SidebarTab>("sidebar-menu", (e) => useUiStore.getState().setSidebarTab(e.payload)).then(
+      (un) => { if (disposed) un(); else unlistens.push(un); },
+    );
+    return () => {
+      disposed = true;
+      unlistens.forEach((un) => un());
+    };
+  }, []);
+  // 前端边栏状态变化 → 回写菜单勾选态（null = 隐藏）
+  useEffect(() => {
+    void api.syncSidebarMenu(sidebarOpen ? sidebarTab : null).catch(() => {});
+  }, [sidebarOpen, sidebarTab]);
   useVaultEvents(vault);
 
   // 主题三态：恒写 data-theme 到 root（CSS 据此切换暗色 token）；
@@ -39,13 +66,15 @@ export default function App() {
         themeMode === "system" ? (mq.matches ? "dark" : "light") : themeMode;
     };
     apply();
+    // 菜单勾选态回写（状态栏按钮/菜单点选/持久化恢复共用这一条同步通道）
+    void api.syncThemeMenu(themeMode).catch(() => {});
     if (themeMode !== "system") return;
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, [themeMode]);
 
   // 全局快捷键统一收敛在这一个 window keydown 处理器：
-  // ⌘S 保存；⌘⇧O 折叠/展开大纲；⌘⇧F 聚焦搜索；⌘⇧P/⌘P 命令面板。
+  // ⌘S 保存；⌘⇧O 切换侧栏显隐；⌘⇧F 聚焦搜索；⌘⇧P/⌘P 命令面板。
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // 防御纵深：若组件内快捷键已处理（defaultPrevented）则跳过，避免双重保存。
@@ -59,10 +88,15 @@ export default function App() {
         e.preventDefault();
         void useTabsStore.getState().saveActive();
       }
-      // ⌘⇧O/ctrl+⇧O 折叠/展开右栏大纲
+      // ⌘⇧O/ctrl+⇧O 切换侧栏显隐（大纲在侧栏页签内）
       if (modShift && e.key.toLowerCase() === "o") {
         e.preventDefault();
-        useUiStore.getState().toggleOutline();
+        useUiStore.getState().toggleSidebar();
+      }
+      // ⌘N 新建未命名缓冲区（Typora 式）
+      if (mod && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        useTabsStore.getState().newUntitled();
       }
       // ⌘⇧F/ctrl+⇧F 切到搜索页签并聚焦输入框
       if (modShift && e.key.toLowerCase() === "f") {
@@ -80,7 +114,9 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const emptyState = (
+  // 无 vault 时侧栏放引导（选择文件夹）；主区仍给标签栏+编辑器——
+  // 启动即有未命名缓冲区可写（Typora 语义），⌘S 时再引导选位置
+  const vaultGuide = (
     <div className="empty-state">
       <FolderOpen size={48} strokeWidth={1.5} />
       <p>打开一个文件夹，开始笔记</p>
@@ -92,14 +128,13 @@ export default function App() {
   return (
     <>
       <AppShell
-        sidebar={vault ? <Sidebar /> : null}
-        main={vault ? (
+        sidebar={sidebarOpen ? (vault ? <Sidebar /> : vaultGuide) : null}
+        main={
           <>
             <TabBar />
             <MilkdownPane />
           </>
-        ) : emptyState}
-        right={vault && outlineOpen ? <OutlinePanel /> : null}
+        }
         statusBar={<StatusBar />}
       />
       <ConflictDialog />

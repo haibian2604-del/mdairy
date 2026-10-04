@@ -1,4 +1,5 @@
 import { useUiStore } from "../stores/ui";
+import { useTabsStore } from "../stores/tabs";
 import { pickAndOpenVault } from "./pickVault";
 
 export interface Command {
@@ -13,10 +14,10 @@ export interface Command {
 export function useCommands(): Command[] {
   return [
     {
-      id: "toggle-outline",
-      label: "切换大纲",
+      id: "toggle-sidebar",
+      label: "切换侧栏",
       hint: "⌘⇧O",
-      run: () => useUiStore.getState().toggleOutline(),
+      run: () => useUiStore.getState().toggleSidebar(),
     },
     {
       id: "focus-search",
@@ -25,10 +26,16 @@ export function useCommands(): Command[] {
       run: () => useUiStore.getState().focusSearch(),
     },
     {
+      id: "new-note",
+      label: "新建笔记",
+      hint: "⌘N",
+      run: () => useTabsStore.getState().newUntitled(),
+    },
+    {
       id: "open-folder",
       label: "打开文件夹",
       run: () => void pickAndOpenVault(),
     },
-    // M6 占位：切换主题（亮/暗/跟随系统）、新建笔记、最近文件等在此注册。
+    // M6 占位：切换主题（亮/暗/跟随系统）、最近文件等在此注册。
   ];
 }

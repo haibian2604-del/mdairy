@@ -1,3 +1,4 @@
+use crate::files::skipped;
 use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, RecommendedCache};
 use serde::Serialize;
@@ -8,10 +9,6 @@ use std::time::Duration;
 use tauri::{Emitter, State};
 
 pub struct WatcherState(pub Mutex<Option<Debouncer<RecommendedWatcher, RecommendedCache>>>);
-
-fn skipped(name: &str) -> bool {
-    name.starts_with('.') || name == "_assets" || name == "node_modules"
-}
 
 pub fn filter_paths(root: &Path, paths: &[PathBuf]) -> Vec<String> {
     let mut rels: Vec<String> = Vec::new();

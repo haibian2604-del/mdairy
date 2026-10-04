@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { FileText, SquareSlash } from "lucide-react";
+import { useMemo, useState, type KeyboardEvent } from "react";
+import { File, SquareSlash } from "lucide-react";
 import type { TreeNode } from "../api";
-import { useOpenFile } from "../hooks/useOpenFile";
 import { useCommands, type Command } from "../lib/commands";
+import { useTabsStore } from "../stores/tabs";
 import { useWorkspaceStore } from "../stores/workspace";
 
 type Item =
@@ -18,9 +18,7 @@ export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClo
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const tree = useWorkspaceStore((s) => s.tree);
-  const openFile = useOpenFile();
   const commands = useCommands();
-  const listRef = useRef<HTMLDivElement>(null);
 
   // 树扁平为文件列表（递归遍历，按树序；修改时间暂不可得）
   const files = useMemo(() => {
@@ -58,7 +56,7 @@ export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClo
   const execute = (item: Item | undefined) => {
     if (!item) return;
     if (item.kind === "command") item.command.run();
-    else void openFile(item.rel);
+    else void useTabsStore.getState().openOrFocus(item.rel);
     onClose();
   };
 
@@ -102,7 +100,7 @@ export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClo
         )
         : (
           <>
-            <FileText size={15} className="palette-icon" />
+            <File size={15} strokeWidth={1.75} className="palette-icon" />
             <span>{item.name.replace(/\.md$/i, "")}</span>
             {item.rel !== item.name && <span className="palette-hint">{item.rel}</span>}
           </>
@@ -131,7 +129,7 @@ export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClo
           }}
           onKeyDown={onKeyDown}
         />
-        <div className="palette-list" role="listbox" aria-label="命令与文件" ref={listRef}>
+        <div className="palette-list" role="listbox" aria-label="命令与文件">
           {items.length === 0 && <div className="palette-empty">没有匹配项</div>}
           {commandItems.length > 0 && <div className="palette-group">命令</div>}
           {commandItems.map((item, i) => renderItem(item, i))}

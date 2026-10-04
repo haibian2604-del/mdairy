@@ -1,4 +1,4 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const markdownUpdatedCb = { fn: null as null | ((
@@ -14,6 +14,7 @@ const capturedConfigFns: Array<(ctx: unknown) => void> = [];
 
 vi.mock("@milkdown/crepe", () => ({
   Crepe: class {
+    static Feature = { Placeholder: "placeholder" };
     editor = {
       action: mockReplaceAll,
       use: () => {},
@@ -88,9 +89,11 @@ describe("MilkdownPane", () => {
     useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null, pendingJump: null });
   });
 
-  it("无 active tab 渲染占位", () => {
+  it("无 active tab 渲染空白占位（对标 Typora，无提示文字）", () => {
     render(<MilkdownPane />);
-    expect(screen.getByText("从左侧选择一个文件")).toBeInTheDocument();
+    const empty = document.querySelector(".editor-empty");
+    expect(empty).toBeInTheDocument();
+    expect(empty).toBeEmptyDOMElement();
   });
 
   it("挂载时以 store 内容创建编辑器", async () => {

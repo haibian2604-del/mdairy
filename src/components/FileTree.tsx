@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, MoreHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, File, Folder, FolderOpen, MoreHorizontal } from "lucide-react";
 import { api, type TreeNode } from "../api";
 import { useTabsStore } from "../stores/tabs";
 import { useWorkspaceStore } from "../stores/workspace";
@@ -9,7 +9,7 @@ const displayName = (name: string) => name.replace(/\.md$/i, "");
 /** 行内输入：新建（目标目录内）或重命名（原行位置） */
 type Inline =
   | { mode: "new"; parentRel: string; kind: "file" | "dir"; siblings: string[] }
-  | { mode: "rename"; rel: string; oldName: string; siblings: string[] };
+  | { mode: "rename"; rel: string; siblings: string[] };
 
 function nameError(name: string, siblings: string[]): string | null {
   if (!name.trim()) return "名称不能为空";
@@ -158,14 +158,14 @@ export function FileTree({ nodes, depth = 0, onOpenFile }: {
                   {n.kind === "dir" ? (
                     <button className="tree-row" style={{ paddingLeft: indent }} onClick={() => toggle(n.rel)}>
                       {expanded.has(n.rel)
-                        ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        ? <ChevronDown size={14} strokeWidth={1.75} /> : <ChevronRight size={14} strokeWidth={1.75} />}
                       {expanded.has(n.rel)
-                        ? <FolderOpen size={16} /> : <Folder size={16} />}
+                        ? <FolderOpen size={16} strokeWidth={1.75} /> : <Folder size={16} strokeWidth={1.75} />}
                       <span>{n.name}</span>
                     </button>
                   ) : (
                     <button className="tree-row" style={{ paddingLeft: indent }} onClick={() => onOpenFile(n.rel)}>
-                      <FileText size={16} />
+                      <File size={16} strokeWidth={1.75} />
                       <span>{displayName(n.name)}</span>
                     </button>
                   )}
@@ -193,7 +193,7 @@ export function FileTree({ nodes, depth = 0, onOpenFile }: {
                         <button role="menuitem" onClick={() => {
                           setMenuRel(null);
                           setServerError(null);
-                          setInline({ mode: "rename", rel: n.rel, oldName: n.name, siblings: nodes.map((x) => x.name) });
+                          setInline({ mode: "rename", rel: n.rel, siblings: nodes.map((x) => x.name) });
                         }}>重命名</button>
                         <button role="menuitem" className="menu-danger" onClick={() => {
                           setMenuRel(null);

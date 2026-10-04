@@ -7,6 +7,8 @@ interface SettingsState {
   themeMode: ThemeMode;
   /** 状态栏按钮循环：system→light→dark→system */
   cycleTheme: () => void;
+  /** 直接设置（顶部"主题"菜单与状态栏共用，App 侧联动 sync_theme_menu） */
+  setThemeMode: (mode: ThemeMode) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -15,6 +17,7 @@ export const useSettingsStore = create<SettingsState>()(
       themeMode: "system",
       cycleTheme: () =>
         set({ themeMode: get().themeMode === "system" ? "light" : get().themeMode === "light" ? "dark" : "system" }),
+      setThemeMode: (mode) => set({ themeMode: mode }),
     }),
     { name: "mdairy-theme", partialize: (s) => ({ themeMode: s.themeMode }) },
   ),

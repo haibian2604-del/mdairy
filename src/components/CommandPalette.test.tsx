@@ -5,7 +5,7 @@ const runSpy = vi.fn();
 
 vi.mock("../lib/commands", () => ({
   useCommands: () => [
-    { id: "toggle-outline", label: "切换大纲", run: runSpy },
+    { id: "toggle-sidebar", label: "切换侧栏", run: runSpy },
   ],
 }));
 vi.mock("../hooks/useOpenFile", () => ({ useOpenFile: () => vi.fn() }));
@@ -30,10 +30,10 @@ describe("CommandPalette", () => {
   it("all 模式展示命令与文件，输入过滤", () => {
     render(<CommandPalette mode="all" onClose={() => {}} />);
     expect(screen.getByPlaceholderText("输入命令或文件名…")).toBeInTheDocument();
-    expect(screen.getByText("切换大纲")).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText("输入命令或文件名…"), { target: { value: "大纲" } });
+    expect(screen.getByText("切换侧栏")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("输入命令或文件名…"), { target: { value: "侧栏" } });
     expect(screen.queryByText("日记")).not.toBeInTheDocument();
-    expect(screen.getByText("切换大纲")).toBeInTheDocument();
+    expect(screen.getByText("切换侧栏")).toBeInTheDocument();
   });
 
   it("回车执行选中命令并关闭", () => {

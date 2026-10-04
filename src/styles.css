@@ -24,19 +24,23 @@ body {
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
 button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring); outline-offset: -1px; }
 
+/* 悬停/选中即时反馈：统一 120ms 颜色过渡（Operate 模式——反馈要快，不编排入场） */
+.tree-row, .tree-more, .tree-menu button, .outline-item,
+.search-hit-row, .tab, .status-theme, .vault-name,
+.btn-primary, .btn {
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
 .app-shell {
   display: grid; height: 100vh;
   grid-template-columns: 260px 1fr; grid-template-rows: 1fr 28px;
 }
-.app-shell.has-right { grid-template-columns: 260px 1fr 220px; }
-.app-shell.no-vault { grid-template-columns: 1fr; }
+/* 边栏隐藏 = 单列网格：主区自动落入唯一轨道。
+   （不能用 0px+1fr 双列——主区会被 auto-placement 放进 0px 列，内容全靠溢出绘制） */
+.app-shell.no-sidebar { grid-template-columns: 1fr; }
 .sidebar {
   grid-row: 1; background: var(--bg-sidebar); border-right: 1px solid var(--border);
-  overflow-y: auto; display: flex; flex-direction: column;
-}
-.right-panel {
-  grid-row: 1; background: var(--bg-sidebar); border-left: 1px solid var(--border);
-  overflow-y: auto; display: flex; flex-direction: column;
+  overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column;
 }
 .main-area { display: flex; flex-direction: column; min-width: 0; grid-row: 1; }
 .status-bar {
@@ -53,7 +57,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .status-theme:hover { color: var(--fg); }
 
 .empty-state {
-  place-self: center; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  margin: auto; display: flex; flex-direction: column; align-items: center; gap: 12px;
   color: var(--fg-muted);
 }
 .btn-primary {
@@ -104,16 +108,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .inline-input.invalid { border-color: var(--danger); }
 .inline-error { color: var(--danger); font-size: 12px; white-space: nowrap; flex: none; }
 
-/* 侧栏双页签（文件 / 搜索） */
-.sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); flex: none; }
-.sidebar-tab {
-  flex: 1; padding: 8px 0 6px; font-size: 13px; color: var(--fg-muted);
-  border-bottom: 2px solid transparent; text-align: center;
-}
-.sidebar-tab:hover { color: var(--fg); }
-.sidebar-tab[aria-selected="true"] {
-  color: var(--fg); font-weight: 500; border-bottom-color: var(--accent);
-}
+/* 侧栏视图选择（文件/搜索/大纲）已移至 macOS 菜单栏 Sidebar，窗口内不再有页签行 */
 
 /* 搜索面板 */
 .search-panel { display: flex; flex-direction: column; padding: 8px; }
@@ -140,11 +135,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   color: inherit; border-radius: 2px; padding: 0 1px;
 }
 
-/* 大纲面板（右栏） */
-.outline-title {
-  flex: none; padding: 10px 12px 4px;
-  font-size: 12px; font-weight: 600; color: var(--fg-muted);
-}
+/* 大纲面板（侧栏"大纲"页签内容） */
 .outline-empty { padding: 12px; font-size: 13px; color: var(--fg-muted); }
 .outline-item {
   display: block; width: 100%; padding: 3px 8px; border-radius: 4px;
@@ -252,3 +243,29 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
       0px 2px 6px 2px rgba(255, 255, 255, 0.15);
 }
 [data-theme="dark"] .milkdown-pane .milkdown { background: transparent; }
+
+/* ===== 动效 =====
+   侧栏页签切换 / 弹层出现 / 树内菜单：轻量上滑淡入，解释"内容已切换"而非装饰 */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+.file-tree, .search-panel, .outline-panel {
+  animation: view-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes overlay-in {
+  from { opacity: 0; }
+}
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+.modal-overlay, .palette-overlay { animation: overlay-in 150ms ease-out; }
+.modal-panel { animation: panel-in 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.palette { animation: panel-in 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.tree-menu { animation: panel-in 120ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

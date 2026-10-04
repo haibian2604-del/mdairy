@@ -5,9 +5,16 @@ vi.mock("../api", () => ({
   api: {
     saveFile: vi.fn(async (_v: string, _r: string, c: string) => ({ content: c, mtimeMillis: 42, encoding: "UTF-8" })),
     readFile: vi.fn(),
+    saveNewFile: vi.fn(async () => 42),
   },
 }));
 
+vi.mock("@tauri-apps/plugin-dialog", () => ({
+  open: vi.fn(async () => null),
+  save: vi.fn(async () => null),
+}));
+
+import { open as mockPickFolder, save as mockSaveDialog } from "@tauri-apps/plugin-dialog";
 import { useTabsStore } from "./tabs";
 import { useWorkspaceStore } from "./workspace";
 
@@ -85,7 +92,7 @@ describe("tabsStore", () => {
   it("无 vault 时 saveActive 静默跳过", async () => {
     useWorkspaceStore.setState({ vault: null });
     useTabsStore.getState().open({ rel: "a.md", name: "a.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });
-    await expect(useTabsStore.getState().saveActive()).resolves.toBeUndefined();
+    await expect(useTabsStore.getState().saveActive()).resolves.toBe(false);
   });
 
   it("requestJump 未开先 open 再置 pendingJump，已开 setActive；consumeJump 清空", async () => {
@@ -145,7 +152,7 @@ describe("tabsStore v2: 冲突状态机 / 快照保存 / 关闭确认", () => {
     vi.mocked(api.saveFile).mockRejectedValueOnce("外部修改冲突: 磁盘上的文件与保存时不同");
     useTabsStore.getState().open({ rel: "a.md", name: "a", content: "# v1", mtimeMillis: 1, encoding: "UTF-8" });
     useTabsStore.getState().updateActive("# 改");
-    await expect(useTabsStore.getState().saveActive()).resolves.toBeUndefined();
+    await expect(useTabsStore.getState().saveActive()).resolves.toBe(false);
     expect(useTabsStore.getState().conflict).toEqual({ rel: "a.md", reason: "modified" });
   });
 
@@ -221,5 +228,74 @@ describe("tabsStore v2: 冲突状态机 / 快照保存 / 关闭确认", () => {
     await useTabsStore.getState().confirmClose();
     expect(useTabsStore.getState().tabs).toHaveLength(0);
     expect(vi.mocked(api.saveFile)).toHaveBeenCalled();
+  });
+});
+
+describe("tabsStore v3: 未命名缓冲区", () => {
+  beforeEach(() => {
+    useTabsStore.setState({ tabs: [], activeRel: null, conflict: null, pendingCloseRel: null, pendingJump: null, untitledSeq: 0 });
+    useWorkspaceStore.setState({ vault: "/canon/v" });
+    vi.mocked(mockPickFolder).mockClear();
+    vi.mocked(mockSaveDialog).mockClear();
+  });
+
+  it("newUntitled 命名递增且 rel 唯一，空内容不脏", () => {
+    useTabsStore.getState().newUntitled();
+    useTabsStore.getState().newUntitled();
+    const s = useTabsStore.getState();
+    expect(s.tabs.map((t) => t.name)).toEqual(["未命名", "未命名 2"]);
+    expect(s.tabs[0].rel).not.toBe(s.tabs[1].rel);
+    expect(s.tabs[1].untitled).toBe(true);
+    expect(s.activeRel).toBe(s.tabs[1].rel);
+    expect(s.isDirty(s.tabs[1].rel)).toBe(false); // 空缓冲区可静默关闭
+  });
+
+  it("保存 vault 内：转正为真实标签", async () => {
+    vi.mocked(mockSaveDialog).mockResolvedValueOnce("/canon/v/笔记.md");
+    useTabsStore.getState().newUntitled();
+    useTabsStore.getState().updateActive("# 内容");
+    const rel = useTabsStore.getState().activeRel!;
+    await expect(useTabsStore.getState().saveActive()).resolves.toBe(true);
+    const s = useTabsStore.getState();
+    const t = s.tabs.find((x) => x.rel === "笔记.md")!;
+    expect(t).toBeDefined();
+    expect(t.name).toBe("笔记");
+    expect(t.untitled).toBeUndefined();
+    expect(t.savedContent).toBe("# 内容");
+    expect(s.activeRel).toBe("笔记.md");
+    expect(s.tabs.find((x) => x.rel === rel)).toBeUndefined();
+    expect(vi.mocked(mockSaveDialog)).toHaveBeenCalledWith(
+      expect.objectContaining({ defaultPath: "/canon/v/未命名.md" }),
+    );
+  });
+
+  it("保存 vault 外：落盘后关闭标签", async () => {
+    vi.mocked(mockSaveDialog).mockResolvedValueOnce("/elsewhere/外.md");
+    const { api } = await import("../api");
+    useTabsStore.getState().newUntitled();
+    useTabsStore.getState().updateActive("外部");
+    await expect(useTabsStore.getState().saveActive()).resolves.toBe(true);
+    expect(vi.mocked(api.saveNewFile)).toHaveBeenCalledWith("/elsewhere/外.md", "外部");
+    expect(useTabsStore.getState().tabs).toHaveLength(0);
+  });
+
+  it("取消保存对话框：返回 false，缓冲区原样保留", async () => {
+    vi.mocked(mockSaveDialog).mockResolvedValueOnce(null);
+    useTabsStore.getState().newUntitled();
+    useTabsStore.getState().updateActive("草稿");
+    await expect(useTabsStore.getState().saveActive()).resolves.toBe(false);
+    expect(useTabsStore.getState().tabs).toHaveLength(1);
+    expect(useTabsStore.getState().tabs[0].untitled).toBe(true);
+  });
+
+  it("关闭脏未命名 → 确认保存被取消 → 标签保持打开", async () => {
+    vi.mocked(mockSaveDialog).mockResolvedValueOnce(null);
+    useTabsStore.getState().newUntitled();
+    useTabsStore.getState().updateActive("草稿");
+    const rel = useTabsStore.getState().activeRel!;
+    useTabsStore.getState().requestClose(rel);
+    await useTabsStore.getState().confirmClose();
+    expect(useTabsStore.getState().pendingCloseRel).toBeNull();
+    expect(useTabsStore.getState().tabs).toHaveLength(1);
   });
 });
