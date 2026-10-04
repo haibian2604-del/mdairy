@@ -9,13 +9,12 @@
   --accent: #d97706; --accent-fg: #ffffff;
   --danger: #dc2626; --ring: #d97706;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0c0a09; --bg-sidebar: #171412; --bg-inset: #1c1917;
-    --fg: #fafaf9; --fg-muted: #a8a29e; --border: #292524;
-    --accent: #f59e0b; --accent-fg: #0c0a09;
-    --danger: #ef4444; --ring: #f59e0b;
-  }
+/* 暗色 token：由 root 上的 data-theme="dark" 驱动（三态切换，system 态由 App effect 解析写入） */
+[data-theme="dark"] {
+  --bg: #0c0a09; --bg-sidebar: #171412; --bg-inset: #1c1917;
+  --fg: #fafaf9; --fg-muted: #a8a29e; --border: #292524;
+  --accent: #f59e0b; --accent-fg: #0c0a09;
+  --danger: #ef4444; --ring: #f59e0b;
 }
 * { box-sizing: border-box; }
 body {
@@ -46,6 +45,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   font-size: 12px; color: var(--fg-muted); white-space: nowrap;
 }
 .status-path { overflow: hidden; text-overflow: ellipsis; }
+/* 状态栏右端主题三态切换按钮 */
+.status-theme {
+  margin-left: auto; display: flex; align-items: center;
+  color: var(--fg-muted); border-radius: 4px; padding: 0 2px;
+}
+.status-theme:hover { color: var(--fg); }
 
 .empty-state {
   place-self: center; display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -218,11 +223,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .milkdown-pane { flex: 1; min-height: 0; overflow-y: auto; }
 .milkdown-pane .milkdown { min-height: 100%; background: var(--bg); color: var(--fg); }
 
-/* Crepe 暗色适配：frame-dark 主题与 frame 同为 `.milkdown` 作用域、先后引入无法按系统亮暗切换
-   （@import 无法嵌套进 media），故照 frame-dark 变量手写暗色覆盖，
-   选择器 :root:not([data-theme="light"]) 提升优先级并与 token 切换机制一致 */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .milkdown {
+/* Crepe 暗色适配：frame-dark 主题与 frame 同为 `.milkdown` 作用域、无法按主题三态切换
+   （@import 无法嵌套进条件选择），故照 frame-dark 变量手写暗色覆盖，
+   由 root 的 data-theme="dark" 驱动并与 token 切换机制一致 */
+[data-theme="dark"] .milkdown {
     --crepe-color-background: #1a1a1a;
     --crepe-color-on-background: #e6e6e6;
     --crepe-color-surface: #121212;
@@ -246,6 +250,5 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
     --crepe-shadow-2:
       0px 1px 2px 0px rgba(255, 255, 255, 0.3),
       0px 2px 6px 2px rgba(255, 255, 255, 0.15);
-  }
-  :root:not([data-theme="light"]) .milkdown-pane .milkdown { background: transparent; }
 }
+[data-theme="dark"] .milkdown-pane .milkdown { background: transparent; }

@@ -11,6 +11,7 @@ import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
 import { pickAndOpenVault } from "./lib/pickVault";
+import { useSettingsStore } from "./stores/settings";
 import { useTabsStore } from "./stores/tabs";
 import { useUiStore } from "./stores/ui";
 import { useWorkspaceStore } from "./stores/workspace";
@@ -27,6 +28,21 @@ export default function App() {
     void useWorkspaceStore.getState().restoreLastVault();
   }, []);
   useVaultEvents(vault);
+
+  // 主题三态：恒写 data-theme 到 root（CSS 据此切换暗色 token）；
+  // system 态用 matchMedia 解析并监听系统外观变化，其余态直接生效。
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      document.documentElement.dataset.theme =
+        themeMode === "system" ? (mq.matches ? "dark" : "light") : themeMode;
+    };
+    apply();
+    if (themeMode !== "system") return;
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [themeMode]);
 
   // 全局快捷键统一收敛在这一个 window keydown 处理器：
   // ⌘S 保存；⌘⇧O 折叠/展开大纲；⌘⇧F 聚焦搜索；⌘⇧P/⌘P 命令面板。
@@ -53,10 +69,11 @@ export default function App() {
         e.preventDefault();
         useUiStore.getState().focusSearch();
       }
-      // ⌘⇧P 开命令面板（all）/ ⌘P 开文件模式（preventDefault 拦截 WebView 默认打印）
+      // ⌘⇧P 开/关命令面板（all）/ ⌘P 开/关文件模式（preventDefault 拦截 WebView 默认打印）：
+      // 再按同模式关闭，切到另一模式则直接切换。
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "p") {
         e.preventDefault();
-        setPaletteMode(e.shiftKey ? "all" : "files");
+        setPaletteMode((p) => (p === (e.shiftKey ? "all" : "files") ? null : (e.shiftKey ? "all" : "files")));
       }
     };
     window.addEventListener("keydown", onKey);
