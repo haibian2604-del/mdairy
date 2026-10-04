@@ -66,6 +66,22 @@ describe("tabsStore", () => {
     expect(useTabsStore.getState().activeRel).toBe("日记/b.md");
   });
 
+  it("renameTab 目录改名迁移后代标签并保持内容与脏状态", () => {
+    const s = useTabsStore.getState();
+    s.open({ rel: "日记/a.md", name: "a.md", content: "# a", mtimeMillis: 1, encoding: "UTF-8" });
+    s.open({ rel: "日记/子/b.md", name: "b.md", content: "# b", mtimeMillis: 2, encoding: "UTF-8" });
+    useTabsStore.getState().updateActive("# b 改"); // 后代标签有未保存编辑
+    useTabsStore.getState().renameTab("日记", "周记");
+    const tabs = useTabsStore.getState().tabs;
+    expect(tabs.map((t) => t.rel)).toEqual(["周记/a.md", "周记/子/b.md"]);
+    expect(tabs[0].name).toBe("a");
+    expect(tabs[1].name).toBe("b");
+    expect(tabs[1].content).toBe("# b 改"); // 脏内容保留
+    expect(tabs[1].savedContent).toBe("# b");
+    expect(useTabsStore.getState().isDirty("周记/子/b.md")).toBe(true);
+    expect(useTabsStore.getState().activeRel).toBe("周记/子/b.md");
+  });
+
   it("无 vault 时 saveActive 静默跳过", async () => {
     useWorkspaceStore.setState({ vault: null });
     useTabsStore.getState().open({ rel: "a.md", name: "a.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });

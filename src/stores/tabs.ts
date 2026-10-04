@@ -39,7 +39,7 @@ interface TabsState {
   pendingJump: PendingJump | null;
   open: (t: OpenArgs) => void;
   close: (rel: string) => void;
-  /** 磁盘改名（内容未变）：只更新 rel/name，保持 content/savedContent/mtimeMillis */
+  /** 磁盘改名（内容未变）：只更新 rel/name（含目录改名时迁移后代标签），保持 content/savedContent/mtimeMillis */
   renameTab: (oldRel: string, newRel: string) => void;
   setActive: (rel: string) => void;
   updateActive: (content: string) => void;
@@ -85,14 +85,24 @@ export const useTabsStore = create<TabsState>((set, get) => ({
     }),
   setActive: (rel) => set({ activeRel: rel }),
   renameTab: (oldRel, newRel) =>
-    set((s) => ({
-      tabs: s.tabs.map((t) =>
-        t.rel === oldRel
-          ? { ...t, rel: newRel, name: (newRel.split("/").pop() ?? newRel).replace(/\.md$/i, "") }
-          : t,
-      ),
-      activeRel: s.activeRel === oldRel ? newRel : s.activeRel,
-    })),
+    set((s) => {
+      // 目录改名时后代文件标签一并迁移，避免悬空旧 rel
+      const moved = (rel: string) =>
+        rel === oldRel
+          ? newRel
+          : rel.startsWith(`${oldRel}/`)
+            ? `${newRel}${rel.slice(oldRel.length)}`
+            : null;
+      return {
+        tabs: s.tabs.map((t) => {
+          const rel = moved(t.rel);
+          return rel
+            ? { ...t, rel, name: (rel.split("/").pop() ?? rel).replace(/\.md$/i, "") }
+            : t;
+        }),
+        activeRel: (s.activeRel && moved(s.activeRel)) ?? s.activeRel,
+      };
+    }),
   updateActive: (content) =>
     set((s) => ({
       tabs: s.tabs.map((t) => (t.rel === s.activeRel ? { ...t, content } : t)),

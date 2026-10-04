@@ -121,7 +121,11 @@ export function FileTree({ nodes, depth = 0, onOpenFile }: {
       await useWorkspaceStore.getState().refreshTree();
       return;
     }
-    useTabsStore.getState().close(pendingTrash.rel); // 已打开则关闭标签
+    // 已打开的自身/后代（目录删除）标签批量关闭
+    const { tabs, close } = useTabsStore.getState();
+    for (const t of [...tabs]) {
+      if (t.rel === pendingTrash.rel || t.rel.startsWith(`${pendingTrash.rel}/`)) close(t.rel);
+    }
     await useWorkspaceStore.getState().refreshTree();
   };
 

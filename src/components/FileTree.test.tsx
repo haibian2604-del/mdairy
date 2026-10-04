@@ -14,6 +14,7 @@ vi.mock("../api", () => ({
 }));
 
 import { api } from "../api";
+import { useTabsStore } from "../stores/tabs";
 import { useWorkspaceStore } from "../stores/workspace";
 
 const tree: TreeNode[] = [
@@ -76,5 +77,22 @@ describe("FileTree", () => {
     expect(api.createEntry).toHaveBeenCalledWith("/canon/v", "日记", "c.md", "file");
     expect(api.listTree).toHaveBeenCalled(); // refreshTree
     expect(screen.queryByPlaceholderText("新建笔记.md")).not.toBeInTheDocument();
+  });
+
+  it("删除已打开目录：批量关闭其后代标签", async () => {
+    useTabsStore.setState({ tabs: [], activeRel: null });
+    const s = useTabsStore.getState();
+    s.open({ rel: "日记/b.md", name: "b.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });
+    s.open({ rel: "a.md", name: "a.md", content: "y", mtimeMillis: 2, encoding: "UTF-8" });
+    s.setActive("日记/b.md"); // 激活的是目录内后代标签
+
+    render(<FileTree nodes={tree} onOpenFile={vi.fn()} />);
+    await userEvent.click(screen.getAllByLabelText("更多操作")[0]); // 目录行
+    await userEvent.click(screen.getByRole("menuitem", { name: "删除" }));
+    await userEvent.click(screen.getByRole("button", { name: "删除" })); // 确认弹窗 danger 按钮
+
+    expect(api.trashEntry).toHaveBeenCalledWith("/canon/v", "日记");
+    expect(useTabsStore.getState().tabs.map((t) => t.rel)).toEqual(["a.md"]); // 后代标签被关闭
+    expect(useTabsStore.getState().activeRel).toBe("a.md"); // 焦点挪到相邻标签
   });
 });
