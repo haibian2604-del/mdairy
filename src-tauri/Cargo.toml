@@ -27,6 +27,7 @@ chardetng = "1.0.0"
 notify-debouncer-full = "0.7.0"
 notify = "8.2.0"
 tauri-plugin-opener = "2.7.0"
+trash = "5.2.9"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

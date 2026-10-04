@@ -163,6 +163,52 @@ pub fn list_tree(vault: String) -> Result<Vec<TreeNode>, String> {
     build_tree(&root, &root)
 }
 
+/// 新建条目的名称只允许单个路径段
+fn validate_name(name: &str) -> Result<(), String> {
+    if name.is_empty() || name == ".." || name.contains('/') || name.contains('\\') {
+        return Err("名称不合法".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn create_entry(vault: &str, parent_rel: &str, name: &str, kind: &str) -> Result<(), String> {
+    validate_name(name)?;
+    let parent = resolve_secure(vault, parent_rel)?;
+    let target = parent.join(name);
+    if target.exists() {
+        return Err("已存在同名文件或文件夹".into());
+    }
+    match kind {
+        "dir" => fs::create_dir(target).map_err(|e| e.to_string()),
+        "file" => fs::write(target, b"").map_err(|e| e.to_string()),
+        _ => Err("类型不合法".into()),
+    }
+}
+
+#[tauri::command]
+pub fn rename_entry(vault: &str, rel: &str, new_name: &str) -> Result<(), String> {
+    validate_name(new_name)?;
+    let old = resolve_secure(vault, rel)?;
+    let parent = old.parent().ok_or_else(|| "路径不合法".to_string())?;
+    // 新路径由原父目录拼出，天然同层；此处兜底校验防越界
+    let root = fs::canonicalize(vault).map_err(|e| e.to_string())?;
+    if !parent.starts_with(&root) {
+        return Err("路径越界".into());
+    }
+    let target = parent.join(new_name);
+    if target.exists() {
+        return Err("已存在同名文件或文件夹".into());
+    }
+    fs::rename(&old, &target).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn trash_entry(vault: &str, rel: &str) -> Result<(), String> {
+    let p = resolve_secure(vault, rel)?;
+    trash::delete(&p).map_err(|e| format!("移入废纸篓失败: {e}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -258,5 +304,56 @@ mod tests {
         let err = save_file(v, "a.md", "x", None, Some(read.mtime_millis + 999_999)).unwrap_err();
         assert!(err.starts_with("外部修改冲突"));
         save_file(v, "a.md", "y", None, Some(read.mtime_millis)).unwrap();
+    }
+
+    #[test]
+    fn create_entry_creates_file_and_dir() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        create_entry(v, "", "新建.md", "file").unwrap();
+        assert_eq!(read_file(v, "新建.md").unwrap().content, "");
+        create_entry(v, "日记", "子目录", "dir").unwrap();
+        assert!(vault.join("日记/子目录").is_dir());
+    }
+
+    #[test]
+    fn create_entry_rejects_duplicate() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        let err = create_entry(v, "", "a.md", "file").unwrap_err();
+        assert!(err.contains("已存在"));
+        assert!(create_entry(v, "", "日记", "dir").is_err());
+    }
+
+    #[test]
+    fn create_entry_rejects_invalid_name() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        assert!(create_entry(v, "", "..", "dir").is_err());
+        assert!(create_entry(v, "", "a/b.md", "file").is_err());
+        assert!(create_entry(v, "", "a\\b.md", "file").is_err());
+        assert!(create_entry(v, "", "", "file").is_err());
+    }
+
+    #[test]
+    fn rename_entry_roundtrip_and_rejects_duplicate_or_invalid() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        rename_entry(v, "a.md", "重命名.md").unwrap();
+        assert!(!vault.join("a.md").exists());
+        assert!(vault.join("重命名.md").exists());
+        assert!(rename_entry(v, "重命名.md", "日记").is_err()); // 与已有目录同名
+        assert!(rename_entry(v, "重命名.md", "skip.txt").is_err()); // 与兄弟文件同名
+        assert!(rename_entry(v, "重命名.md", "../evil.md").is_err()); // 非法名
+        assert!(rename_entry(v, "nope.md", "x.md").is_err()); // 原不存在
+    }
+
+    #[test]
+    fn trash_entry_moves_to_trash() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        trash_entry(v, "a.md").unwrap();
+        assert!(!vault.join("a.md").exists());
+        assert!(trash_entry(v, "nope.md").is_err());
     }
 }

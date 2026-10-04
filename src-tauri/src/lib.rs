@@ -15,6 +15,9 @@ pub fn run() {
             files::list_tree,
             files::read_file,
             files::save_file,
+            files::create_entry,
+            files::rename_entry,
+            files::trash_entry,
             search::search_vault,
             watcher::watch_vault
         ])

@@ -50,6 +50,22 @@ describe("tabsStore", () => {
     expect(useTabsStore.getState().activeRel).toBe("a.md");
   });
 
+  it("renameTab 更新 rel/name 并保持内容与脏状态", () => {
+    const s = useTabsStore.getState();
+    s.open({ rel: "日记/a.md", name: "a", content: "# hi", mtimeMillis: 7, encoding: "GBK" });
+    useTabsStore.getState().updateActive("# 改了");
+    useTabsStore.getState().renameTab("日记/a.md", "日记/b.md");
+    const t = useTabsStore.getState().tabs[0];
+    expect(t.rel).toBe("日记/b.md");
+    expect(t.name).toBe("b");
+    expect(t.content).toBe("# 改了"); // 脏内容保留
+    expect(t.savedContent).toBe("# hi");
+    expect(t.mtimeMillis).toBe(7); // 磁盘内容未变
+    expect(t.encoding).toBe("GBK");
+    expect(useTabsStore.getState().isDirty("日记/b.md")).toBe(true);
+    expect(useTabsStore.getState().activeRel).toBe("日记/b.md");
+  });
+
   it("无 vault 时 saveActive 静默跳过", async () => {
     useWorkspaceStore.setState({ vault: null });
     useTabsStore.getState().open({ rel: "a.md", name: "a.md", content: "x", mtimeMillis: 1, encoding: "UTF-8" });

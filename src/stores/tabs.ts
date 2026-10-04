@@ -39,6 +39,8 @@ interface TabsState {
   pendingJump: PendingJump | null;
   open: (t: OpenArgs) => void;
   close: (rel: string) => void;
+  /** 磁盘改名（内容未变）：只更新 rel/name，保持 content/savedContent/mtimeMillis */
+  renameTab: (oldRel: string, newRel: string) => void;
   setActive: (rel: string) => void;
   updateActive: (content: string) => void;
   isDirty: (rel: string | null) => boolean;
@@ -82,6 +84,15 @@ export const useTabsStore = create<TabsState>((set, get) => ({
       return { tabs, activeRel };
     }),
   setActive: (rel) => set({ activeRel: rel }),
+  renameTab: (oldRel, newRel) =>
+    set((s) => ({
+      tabs: s.tabs.map((t) =>
+        t.rel === oldRel
+          ? { ...t, rel: newRel, name: (newRel.split("/").pop() ?? newRel).replace(/\.md$/i, "") }
+          : t,
+      ),
+      activeRel: s.activeRel === oldRel ? newRel : s.activeRel,
+    })),
   updateActive: (content) =>
     set((s) => ({
       tabs: s.tabs.map((t) => (t.rel === s.activeRel ? { ...t, content } : t)),

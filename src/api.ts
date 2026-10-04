@@ -30,4 +30,9 @@ export const api = {
     }),
   watchVault: (vault: string) => invoke<void>("watch_vault", { vault }),
   searchVault: (vault: string, query: string) => invoke<SearchHit[]>("search_vault", { vault, query }),
+  createEntry: (vault: string, parentRel: string, name: string, kind: "file" | "dir") =>
+    invoke<void>("create_entry", { vault, parentRel, name, kind }),
+  renameEntry: (vault: string, rel: string, newName: string) =>
+    invoke<void>("rename_entry", { vault, rel, newName }),
+  trashEntry: (vault: string, rel: string) => invoke<void>("trash_entry", { vault, rel }),
 };
