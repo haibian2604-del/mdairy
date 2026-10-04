@@ -203,6 +203,27 @@ pub fn rename_entry(vault: &str, rel: &str, new_name: &str) -> Result<(), String
     fs::rename(&old, &target).map_err(|e| e.to_string())
 }
 
+/// 写入粘贴产生的图片资源到 `<vault>/_assets/`，返回 vault 相对路径如 `_assets/20261004-153000.png`。
+/// ext 白名单（大小写不敏感）；时间戳文件名，同秒内冲突时追加序号保证不覆盖。
+#[tauri::command]
+pub fn write_asset(vault: &str, ext: &str, data: Vec<u8>) -> Result<String, String> {
+    let ext = ext.to_ascii_lowercase();
+    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "gif" | "webp") {
+        return Err(format!("不支持的图片类型: {ext}"));
+    }
+    let dir = fs::canonicalize(vault).map_err(|e| e.to_string())?.join("_assets");
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let mut name = format!("{stamp}.{ext}");
+    let mut n = 1;
+    while dir.join(&name).exists() {
+        n += 1;
+        name = format!("{stamp}-{n}.{ext}");
+    }
+    fs::write(dir.join(&name), data).map_err(|e| e.to_string())?;
+    Ok(format!("_assets/{name}"))
+}
+
 #[tauri::command]
 pub fn trash_entry(vault: &str, rel: &str) -> Result<(), String> {
     let p = resolve_secure(vault, rel)?;
@@ -346,6 +367,30 @@ mod tests {
         assert!(rename_entry(v, "重命名.md", "skip.txt").is_err()); // 与兄弟文件同名
         assert!(rename_entry(v, "重命名.md", "../evil.md").is_err()); // 非法名
         assert!(rename_entry(v, "nope.md", "x.md").is_err()); // 原不存在
+    }
+
+    #[test]
+    fn write_asset_writes_file_and_returns_rel() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        let rel = write_asset(v, "PNG", b"imgdata".to_vec()).unwrap();
+        // rel 形态：_assets/<时间戳>.png
+        assert!(rel.starts_with("_assets/") && rel.ends_with(".png"));
+        let name = rel.trim_start_matches("_assets/");
+        assert_eq!(fs::read(vault.join("_assets").join(name)).unwrap(), b"imgdata");
+        // 同一秒内连写两张不冲突
+        let rel2 = write_asset(v, "png", b"second".to_vec()).unwrap();
+        assert_ne!(rel, rel2);
+        assert_eq!(fs::read(vault.join(rel2)).unwrap(), b"second");
+    }
+
+    #[test]
+    fn write_asset_rejects_bad_ext() {
+        let vault = temp_vault();
+        let v = vault.to_str().unwrap();
+        assert!(write_asset(v, "exe", b"x".to_vec()).is_err());
+        assert!(write_asset(v, "", b"x".to_vec()).is_err());
+        assert!(write_asset(v, "png;rm", b"x".to_vec()).is_err());
     }
 
     #[test]

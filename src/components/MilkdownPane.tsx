@@ -1,9 +1,17 @@
 import { useEffect, useRef } from "react";
 import { Crepe } from "@milkdown/crepe";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { replaceAll } from "@milkdown/kit/utils";
+import { uploadConfig } from "@milkdown/kit/plugin/upload";
+import { Node, Schema } from "@milkdown/kit/prose/model";
+import type { Ctx } from "@milkdown/kit/ctx";
+import { api } from "../api";
 import { toEditableMarkdown, toStoredMarkdown } from "../lib/assetPaths";
 import { useTabsStore } from "../stores/tabs";
 import { useWorkspaceStore } from "../stores/workspace";
+
+// 与 Rust write_asset 的 ext 白名单一致（小写化后比对）
+const ASSET_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
 
 export function MilkdownPane() {
   const vault = useWorkspaceStore((s) => s.vault);
@@ -34,10 +42,40 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
   const activeRelRef = useRef<string | null>(activeRel);
   activeRelRef.current = activeRel;
 
+  // 图片粘贴/拖入的自定义 uploader（注入 crepe 内置 upload 插件的 uploadConfig）。
+  // 不自己写容器 onPaste/handlePaste 拦截：crepe 的 upload 插件 handlePaste 优先级更高，
+  // 会先用默认 uploader（base64）插图；走它的扩展点替换 uploader 才是正确缝位。
+  // 行为：图片字节 → Rust write_asset 落盘 `_assets/<时间戳>.<ext>` → 以 asset URL 建
+  // image 节点插入光标处。URL 与 assetPaths.toEditableMarkdown 同一 convertFileSrc 形态，
+  // 保存时 toStoredMarkdown 既有往返自动还原为 `_assets/…` 相对路径。
+  const uploader = async (files: FileList, schema: Schema, _ctx: Ctx, _pos: number): Promise<Node[]> => {
+    if (!vault) return [];
+    const imgs = Array.from(files).filter((f) => {
+      const ext = f.type.split("/")[1]?.toLowerCase() ?? "";
+      return f.type.startsWith("image/") && ASSET_EXTS.has(ext);
+    });
+    if (imgs.length === 0) return [];
+    const nodes: Node[] = [];
+    for (const file of imgs) {
+      const ext = file.type.split("/")[1]!.toLowerCase();
+      const data = new Uint8Array(await file.arrayBuffer());
+      const rel = await api.writeAsset(vault, ext, data);
+      const node = schema.nodes.image.createAndFill({
+        src: convertFileSrc(`${vault}/${rel}`),
+        alt: "img",
+      });
+      if (node) nodes.push(node);
+    }
+    return nodes;
+  };
+
   // 创建一次；replace effect 需等 create() 完成才能 editor.action，故记录 promise
   useEffect(() => {
     if (!containerRef.current || crepeRef.current) return;
     const crepe = new Crepe({ root: containerRef.current, defaultValue });
+    crepe.editor.config((ctx) => {
+      ctx.update(uploadConfig.key, (prev) => ({ ...prev, uploader }));
+    });
     creatingRef.current = crepe.create().then(() => {
       crepe.on((listener) => {
         listener.markdownUpdated((_ctx, markdown) => {
@@ -52,6 +90,10 @@ function MilkdownEditor({ defaultValue, vault }: { defaultValue: string; vault: 
         });
       });
       snapshotRef.current = crepe.getMarkdown();
+      // 打开文件即聚焦编辑器：⌘P 打开后可直接输入/粘贴（否则焦点残留在 body，⌘V 无处落地）
+      window.setTimeout(() => {
+        containerRef.current?.querySelector<HTMLElement>(".ProseMirror")?.focus();
+      }, 100);
     });
     crepeRef.current = crepe;
     return () => {

@@ -35,4 +35,7 @@ export const api = {
   renameEntry: (vault: string, rel: string, newName: string) =>
     invoke<void>("rename_entry", { vault, rel, newName }),
   trashEntry: (vault: string, rel: string) => invoke<void>("trash_entry", { vault, rel }),
+  // Uint8Array 经 JSON 序列化为数字数组后还原为 Vec<u8>（本地 IPC，图片体积可接受）
+  writeAsset: (vault: string, ext: string, data: Uint8Array) =>
+    invoke<string>("write_asset", { vault, ext, data: Array.from(data) }),
 };

@@ -17,6 +17,7 @@ pub fn run() {
             files::save_file,
             files::create_entry,
             files::rename_entry,
+            files::write_asset,
             files::trash_entry,
             search::search_vault,
             watcher::watch_vault
