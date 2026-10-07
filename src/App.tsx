@@ -11,7 +11,7 @@ import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
-import { pickAndOpenVault } from "./lib/pickVault";
+import { pickAndOpenFile, pickAndOpenVault } from "./lib/pickVault";
 import type { ThemeMode } from "./stores/settings";
 import { useSettingsStore } from "./stores/settings";
 import { useTabsStore } from "./stores/tabs";
@@ -44,6 +44,13 @@ export default function App() {
     void listen<SidebarTab>("sidebar-menu", (e) => useUiStore.getState().setSidebarTab(e.payload)).then(
       (un) => { if (disposed) un(); else unlistens.push(un); },
     );
+    // File 菜单（新建文件 ⌘N / 打开文件夹 ⌘O / 打开文件）→ 前端动作；
+    // ⌘N/⌘O 由原生菜单加速键拦截，webview keydown 里的同名分支仅在无菜单环境兜底
+    void listen<string>("file-menu", (e) => {
+      if (e.payload === "open-folder") void pickAndOpenVault();
+      else if (e.payload === "open-file") void pickAndOpenFile();
+      else if (e.payload === "new-file") useTabsStore.getState().newUntitled();
+    }).then((un) => { if (disposed) un(); else unlistens.push(un); });
     return () => {
       disposed = true;
       unlistens.forEach((un) => un());

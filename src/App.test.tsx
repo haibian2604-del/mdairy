@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./api", () => ({
   api: {
     setVault: vi.fn(),
-    getLastVault: vi.fn(async () => null),
     listTree: vi.fn(async () => []),
     readFile: vi.fn(),
     saveFile: vi.fn(),
@@ -18,7 +17,6 @@ vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(async () => () => {}),
 }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn(), save: vi.fn() }));
-vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn() }));
 // 启动即开未命名缓冲区 → 会挂载编辑器；App 层测试不关心 Milkdown 内部，打桩
 vi.mock("./components/MilkdownPane", () => ({ MilkdownPane: () => <div data-testid="milkdown-stub" /> }));
 

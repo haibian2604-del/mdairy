@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 use tauri::{
-    menu::{CheckMenuItem, Menu, Submenu},
+    menu::{CheckMenuItem, MenuItem, Menu, Submenu},
     Emitter, Manager, Runtime,
 };
 
@@ -18,10 +18,29 @@ const IDS: [&str; 3] = ["theme-system", "theme-light", "theme-dark"];
 const MODES: [&str; 3] = ["system", "light", "dark"];
 const SIDEBAR_IDS: [&str; 3] = ["sidebar-files", "sidebar-search", "sidebar-outline"];
 const SIDEBAR_MODES: [&str; 3] = ["files", "search", "outline"];
+/// File 菜单动作项：id 即 file-menu 事件 payload，前端直接按动作名分发
+const FILE_ACTIONS: [&str; 3] = ["new-file", "open-folder", "open-file"];
 
 /// 在默认 macOS 菜单（File/Edit/View/Window/Help）末尾追加 Theme 与 Sidebar 子菜单。
 pub fn init<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
     let menu = Menu::default(app)?;
+
+    // 默认 File 子菜单仅在 macOS/Windows 构建且无保留 id（只有 Window/Help 有）：
+    // 按标题查找后把常用动作前置到 Close Window 之前，找不到则跳过
+    if let Some(file) = menu.items()?.into_iter().find_map(|item| {
+        let sub = item.as_submenu()?;
+        (sub.text().ok().as_deref() == Some("File")).then(|| sub.clone())
+    }) {
+        let new_file = MenuItem::with_id(app, "new-file", "新建文件", true, Some("CmdOrCtrl+N"))?;
+        let open_folder =
+            MenuItem::with_id(app, "open-folder", "打开文件夹…", true, Some("CmdOrCtrl+O"))?;
+        let open_file = MenuItem::with_id(app, "open-file", "打开文件…", true, None::<&str>)?;
+        // 逐个前置 → 最终顺序：新建文件 / 打开文件夹… / 打开文件… / 关闭窗口
+        file.prepend(&open_file)?;
+        file.prepend(&open_folder)?;
+        file.prepend(&new_file)?;
+    }
+
     let theme = Submenu::with_id(app, "theme-submenu", "Theme", true)?;
     let theme_items = vec![
         CheckMenuItem::with_id(app, IDS[0], "跟随系统", true, true, None::<&str>)?,
@@ -61,6 +80,10 @@ pub fn on_menu_event<R: Runtime>(app: &tauri::AppHandle<R>, id: &str) {
     if let Some(idx) = SIDEBAR_IDS.iter().position(|i| *i == id) {
         set_sidebar_checks(app, Some(SIDEBAR_MODES[idx]));
         let _ = app.emit("sidebar-menu", SIDEBAR_MODES[idx]);
+        return;
+    }
+    if FILE_ACTIONS.contains(&id) {
+        let _ = app.emit("file-menu", id);
     }
 }
 
