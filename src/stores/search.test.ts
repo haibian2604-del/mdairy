@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../api", () => ({
   api: {
     setVault: vi.fn(),
-    getLastVault: vi.fn(),
     listTree: vi.fn(),
     readFile: vi.fn(),
     saveFile: vi.fn(),

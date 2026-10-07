@@ -8,7 +8,6 @@ vi.mock("../lib/commands", () => ({
     { id: "toggle-sidebar", label: "切换侧栏", run: runSpy },
   ],
 }));
-vi.mock("../hooks/useOpenFile", () => ({ useOpenFile: () => vi.fn() }));
 // zustand v5 的 store 实例无法在 vi.mock 工厂里 Object.assign 挂 getState，
 // 故用标准形态：工厂内真实 create() 建 store，tree 直接 seed——
 // 语义保持"palette 能拿到扁平文件列表"。

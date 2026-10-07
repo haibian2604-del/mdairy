@@ -12,7 +12,7 @@ type Item =
 /**
  * 命令面板：⌘⇧P 开 all 模式（命令组 + 文件组）、⌘P 开 files 模式（仅文件）。
  * 匹配为连续子串、大小写不敏感（中文即直接子串）；↑↓ 循环选择、↵ 执行并关闭、
- * esc / 遮罩点击关闭；文件项经 useOpenFile 打开。
+ * esc / 遮罩点击关闭；文件项经 tabs store 的 openOrFocus 打开。
  */
 export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClose: () => void }) {
   const [query, setQuery] = useState("");
