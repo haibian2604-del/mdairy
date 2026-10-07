@@ -8,11 +8,9 @@ export async function pickAndOpenVault(): Promise<void> {
   if (path) await useWorkspaceStore.getState().openVault(path);
 }
 
-/** 弹出系统文件选择框选取 .md 打开为标签（菜单栏 File > 打开文件，⌘O 同效给打开文件夹）：
-    在当前 vault 内直接打开；不在（含未打开 vault）→ 以所选文件所在目录为 vault 打开后再开文件。 */
-export async function pickAndOpenFile(): Promise<void> {
-  const path = await open({ multiple: false, filters: [{ name: "Markdown", extensions: ["md"] }] });
-  if (!path) return;
+/** 绝对路径的 md 打开为标签：在当前 vault 内直接打开；
+    不在（含未打开 vault）→ 以其所在目录为 vault 打开后再开文件。 */
+export async function openAbsolutePath(path: string): Promise<void> {
   const vault = useWorkspaceStore.getState().vault;
   if (vault && path.startsWith(`${vault}/`)) {
     await useTabsStore.getState().openOrFocus(path.slice(vault.length + 1));
@@ -21,4 +19,10 @@ export async function pickAndOpenFile(): Promise<void> {
   const dir = path.slice(0, path.lastIndexOf("/"));
   await useWorkspaceStore.getState().openVault(dir);
   await useTabsStore.getState().openOrFocus(path.slice(dir.length + 1));
+}
+
+/** 弹出系统文件选择框选取 .md 打开为标签（菜单栏 File > 打开文件）。 */
+export async function pickAndOpenFile(): Promise<void> {
+  const path = await open({ multiple: false, filters: [{ name: "Markdown", extensions: ["md"] }] });
+  if (path) await openAbsolutePath(path);
 }

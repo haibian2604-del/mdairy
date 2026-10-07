@@ -11,7 +11,7 @@ import { Sidebar } from "./components/Sidebar";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
 import { useVaultEvents } from "./hooks/useVaultEvents";
-import { pickAndOpenFile, pickAndOpenVault } from "./lib/pickVault";
+import { openAbsolutePath, pickAndOpenFile, pickAndOpenVault } from "./lib/pickVault";
 import type { ThemeMode } from "./stores/settings";
 import { useSettingsStore } from "./stores/settings";
 import { useTabsStore } from "./stores/tabs";
@@ -51,6 +51,16 @@ export default function App() {
       else if (e.payload === "open-file") void pickAndOpenFile();
       else if (e.payload === "new-file") useTabsStore.getState().newUntitled();
     }).then((un) => { if (disposed) un(); else unlistens.push(un); });
+    // 系统打开请求（双击 md / Finder「打开方式」）：运行期事件 + 启动竞态缓冲领取
+    const openPaths = (paths: string[]) => {
+      for (const p of paths) {
+        if (/\.markdown?$/i.test(p)) void openAbsolutePath(p);
+      }
+    };
+    void listen<string[]>("open-paths", (e) => openPaths(e.payload)).then(
+      (un) => { if (disposed) un(); else unlistens.push(un); },
+    );
+    void api.takeOpenedFiles().then(openPaths).catch(() => {});
     return () => {
       disposed = true;
       unlistens.forEach((un) => un());

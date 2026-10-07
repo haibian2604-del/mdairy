@@ -19,6 +19,8 @@ export interface SearchHit {
 
 export const api = {
   setVault: (path: string) => invoke<string>("set_vault", { path }),
+  // 领取缓冲的系统打开请求（双击 md 冷启动竞态兜底），取后即清
+  takeOpenedFiles: () => invoke<string[]>("take_opened_files"),
   listTree: (vault: string) => invoke<TreeNode[]>("list_tree", { vault }),
   readFile: (vault: string, rel: string) => invoke<FileContent>("read_file", { vault, rel }),
   saveFile: (vault: string, rel: string, content: string, opts?: { encoding?: string; expectedMtimeMillis?: number | null }) =>

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("./api", () => ({
   api: {
     setVault: vi.fn(),
+    takeOpenedFiles: vi.fn(async () => []),
     listTree: vi.fn(async () => []),
     readFile: vi.fn(),
     saveFile: vi.fn(),

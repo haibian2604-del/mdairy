@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use tauri::Manager;
 
 pub fn validate_vault(path: &str) -> Result<PathBuf, String> {
     let p = PathBuf::from(path);
@@ -14,6 +15,12 @@ pub fn validate_vault(path: &str) -> Result<PathBuf, String> {
 pub fn set_vault(path: String) -> Result<String, String> {
     let canonical = validate_vault(&path)?;
     Ok(canonical.to_string_lossy().into_owned())
+}
+
+/// 领取缓冲的系统打开请求（双击 md 冷启动时 Opened 先于 webview 的竞态兜底），取后即清。
+#[tauri::command]
+pub fn take_opened_files(app: tauri::AppHandle) -> Vec<String> {
+    app.state::<crate::OpenedFiles>().0.lock().unwrap().drain(..).collect()
 }
 
 #[cfg(test)]
