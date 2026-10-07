@@ -42,6 +42,8 @@ interface TabsState {
   pendingJump: PendingJump | null;
   /** 未命名缓冲区自增序号（rel 唯一性保证，与展示名无关） */
   untitledSeq: number;
+  /** 启动引导已处理：纯启动 → 建未命名；系统带文件打开 → 只开文件。StrictMode 双挂载幂等标记 */
+  launchHandled: boolean;
   open: (t: OpenArgs) => void;
   close: (rel: string) => void;
   newUntitled: () => void;
@@ -74,6 +76,7 @@ export const useTabsStore = create<TabsState>((set, get) => ({
   pendingCloseRel: null,
   pendingJump: null,
   untitledSeq: 0,
+  launchHandled: false,
   open: (t) =>
     set((s) => {
       if (s.tabs.some((x) => x.rel === t.rel)) return { activeRel: t.rel };

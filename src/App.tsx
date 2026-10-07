@@ -28,9 +28,23 @@ export default function App() {
   const [paletteMode, setPaletteMode] = useState<"all" | "files" | null>(null);
 
   useEffect(() => {
-    // Typora 式全新启动：只开一个未命名缓冲区，不恢复上次 vault/标签。
+    // Typora 式启动语义：系统带文件打开（双击 md / 打开方式）→ 只开这些文件；
+    // 纯启动 → 开一个未命名缓冲区。launchHandled 标记保证 StrictMode 双挂载幂等。
     // 守卫幂等：StrictMode 下 effect 双跑不重复开（store 跨卸载保留）
-    if (useTabsStore.getState().tabs.length === 0) useTabsStore.getState().newUntitled();
+    const tabs = useTabsStore.getState();
+    if (tabs.launchHandled || tabs.tabs.length > 0) return;
+    useTabsStore.setState({ launchHandled: true });
+    void api
+      .takeOpenedFiles()
+      .then((paths) => {
+        const md = paths.filter((p) => /\.(md|markdown)$/i.test(p));
+        if (md.length === 0) {
+          useTabsStore.getState().newUntitled();
+          return;
+        }
+        for (const p of md) void openAbsolutePath(p);
+      })
+      .catch(() => useTabsStore.getState().newUntitled());
   }, []);
   // 顶部菜单（Rust 侧）点选 → 同步 store（与状态栏按钮共用一套状态）。
   // listen 异步注册，须带清理：StrictMode 双挂载会注册两份监听器，
