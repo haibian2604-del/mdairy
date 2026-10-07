@@ -41,8 +41,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 .sidebar {
   grid-row: 1; background: var(--bg-sidebar); border-right: 1px solid var(--border);
   overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column;
+  /* scrollIntoView 对齐时越过吸顶 vault-name（padding 10+行高 24+10+边框 1） */
+  scroll-padding-top: 45px;
 }
-.main-area { display: flex; flex-direction: column; min-width: 0; grid-row: 1; }
+/* min-height:0 必须：grid 子元素自动最小尺寸会把 1fr 行撑破 100vh，
+   退化成 body 整页滚动（侧栏随编辑器一起滚）——由编辑器面板内部滚动 */
+.main-area { display: flex; flex-direction: column; min-width: 0; min-height: 0; grid-row: 1; }
 .status-bar {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 16px;
   padding: 0 12px; border-top: 1px solid var(--border);
@@ -66,9 +70,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 }
 .error-text { color: var(--danger); }
 
+/* 吸顶常驻左上角：大纲/文件树/搜索滚动时文件夹名不被滚走、列表不顶到容器边 */
 .vault-name {
+  position: sticky; top: 0; z-index: 1; flex: none;
   padding: 10px 12px; text-align: left; font-weight: 600;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); background: var(--bg-sidebar);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .tree-empty { padding: 16px 12px; color: var(--fg-muted); font-size: 13px; }
@@ -143,6 +149,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .outline-item:hover { background: var(--bg-inset); }
+.outline-item.active { background: var(--bg-inset); color: var(--accent); font-weight: 500; }
 
 .tab-bar {
   display: flex; gap: 2px; padding: 4px 8px 0;
