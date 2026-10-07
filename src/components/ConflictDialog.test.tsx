@@ -33,4 +33,11 @@ describe("ConflictDialog", () => {
     expect(useTabsStore.getState().tabs).toHaveLength(0);
     expect(useTabsStore.getState().conflict).toBeNull();
   });
+
+  it("Escape 关闭弹窗（等同取消）", async () => {
+    useTabsStore.setState({ conflict: { rel: "a.md", reason: "modified" } });
+    render(<ConflictDialog />);
+    await userEvent.keyboard("{Escape}");
+    expect(useTabsStore.getState().conflict).toBeNull();
+  });
 });

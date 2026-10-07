@@ -121,6 +121,7 @@ export function CommandPalette({ mode, onClose }: { mode: "all" | "files"; onClo
           className="palette-input"
           type="text"
           placeholder="输入命令或文件名…"
+          aria-label="搜索命令与文件"
           autoFocus
           value={query}
           onChange={(e) => {

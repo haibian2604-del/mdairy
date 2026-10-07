@@ -6,7 +6,8 @@
 :root {
   --bg: #fafaf9; --bg-sidebar: #f5f5f4; --bg-inset: #f5f5f4;
   --fg: #1c1917; --fg-muted: #57534e; --border: #e7e5e4;
-  --accent: #d97706; --accent-fg: #ffffff;
+  /* 琥珀加深到 amber-700：对白字 5.0:1、对 inset 底 4.6:1（原 #d97706 仅 ~3:1，AA 不达标） */
+  --accent: #b45309; --accent-fg: #ffffff;
   --danger: #dc2626; --ring: #d97706;
 }
 /* 暗色 token：由 root 上的 data-theme="dark" 驱动（三态切换，system 态由 App effect 解析写入） */
@@ -14,7 +15,8 @@
   --bg: #0c0a09; --bg-sidebar: #171412; --bg-inset: #1c1917;
   --fg: #fafaf9; --fg-muted: #a8a29e; --border: #292524;
   --accent: #f59e0b; --accent-fg: #0c0a09;
-  --danger: #ef4444; --ring: #f59e0b;
+  /* 暗底上白字需 ≥4.5:1：#dc2626 为 4.8:1（原 #ef4444 仅 3.8:1） */
+  --danger: #dc2626; --ring: #f59e0b;
 }
 * { box-sizing: border-box; }
 body {
@@ -170,7 +172,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   border-radius: 8px; padding: 20px 24px; width: 420px; max-width: calc(100vw - 48px);
   box-shadow: 0 8px 30px rgba(0,0,0,.2);
 }
-.modal-panel h2 { margin: 0 0 8px; font-size: 16px; }
+.modal-panel h1 { margin: 0 0 8px; font-size: 16px; }
 .modal-desc { margin: 0 0 16px; color: var(--fg-muted); font-size: 13px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn { border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; }

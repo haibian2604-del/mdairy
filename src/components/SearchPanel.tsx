@@ -62,6 +62,7 @@ export function SearchPanel() {
         className="search-input"
         type="text"
         placeholder="搜索当前文件夹…"
+        aria-label="搜索当前文件夹"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />

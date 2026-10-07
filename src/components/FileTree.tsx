@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, File, Folder, FolderOpen, MoreHorizontal } from "lucide-react";
 import { api, type TreeNode } from "../api";
+import { Modal } from "./Modal";
 import { useTabsStore } from "../stores/tabs";
 import { useWorkspaceStore } from "../stores/workspace";
 
@@ -219,16 +220,14 @@ export function FileTree({ nodes, depth = 0, onOpenFile }: {
         })}
       </ul>
       {pendingTrash && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="删除确认">
-          <div className="modal-panel">
-            <h2>删除</h2>
-            <p className="modal-desc">删除 “{displayName(pendingTrash.name)}”？此操作将移入废纸篓。</p>
-            <div className="modal-actions">
-              <button className="btn-primary btn-danger" onClick={() => void confirmTrash()}>删除</button>
-              <button className="btn" onClick={() => setPendingTrash(null)}>取消</button>
-            </div>
+        <Modal label="删除确认" onClose={() => setPendingTrash(null)}>
+          <h1>删除</h1>
+          <p className="modal-desc">删除 “{displayName(pendingTrash.name)}”？此操作将移入废纸篓。</p>
+          <div className="modal-actions">
+            <button className="btn-primary btn-danger" onClick={() => void confirmTrash()}>删除</button>
+            <button className="btn" onClick={() => setPendingTrash(null)}>取消</button>
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );
