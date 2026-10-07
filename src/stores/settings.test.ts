@@ -11,18 +11,18 @@ describe("settingsStore", () => {
     expect(useSettingsStore.getState().themeMode).toBe("system");
   });
 
-  it("cycleTheme 循环 system→light→dark→system", () => {
+  it("setThemeMode 三态可设", () => {
     const s = useSettingsStore.getState();
-    s.cycleTheme();
+    s.setThemeMode("light");
     expect(useSettingsStore.getState().themeMode).toBe("light");
-    s.cycleTheme();
+    s.setThemeMode("dark");
     expect(useSettingsStore.getState().themeMode).toBe("dark");
-    s.cycleTheme();
+    s.setThemeMode("system");
     expect(useSettingsStore.getState().themeMode).toBe("system");
   });
 
   it("persist 写入 mdairy-theme 且只存 themeMode", () => {
-    useSettingsStore.getState().cycleTheme();
+    useSettingsStore.getState().setThemeMode("light");
     const raw = localStorage.getItem("mdairy-theme");
     expect(raw).toBeTruthy();
     const parsed = JSON.parse(raw!);

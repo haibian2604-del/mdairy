@@ -26,7 +26,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
 
 /* 悬停/选中即时反馈：统一 120ms 颜色过渡（Operate 模式——反馈要快，不编排入场） */
 .tree-row, .tree-more, .tree-menu button, .outline-item,
-.search-hit-row, .tab, .status-theme, .vault-name,
+.search-hit-row, .tab, .vault-name,
 .btn-primary, .btn {
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
@@ -53,12 +53,6 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring);
   font-size: 12px; color: var(--fg-muted); white-space: nowrap;
 }
 .status-path { overflow: hidden; text-overflow: ellipsis; }
-/* 状态栏右端主题三态切换按钮 */
-.status-theme {
-  margin-left: auto; display: flex; align-items: center;
-  color: var(--fg-muted); border-radius: 4px; padding: 0 2px;
-}
-.status-theme:hover { color: var(--fg); }
 
 .empty-state {
   margin: auto; display: flex; flex-direction: column; align-items: center; gap: 12px;
