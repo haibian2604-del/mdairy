@@ -54,7 +54,7 @@ export default function App() {
     // 系统打开请求（双击 md / Finder「打开方式」）：运行期事件 + 启动竞态缓冲领取
     const openPaths = (paths: string[]) => {
       for (const p of paths) {
-        if (/\.markdown?$/i.test(p)) void openAbsolutePath(p);
+        if (/\.(md|markdown)$/i.test(p)) void openAbsolutePath(p);
       }
     };
     void listen<string[]>("open-paths", (e) => openPaths(e.payload)).then(

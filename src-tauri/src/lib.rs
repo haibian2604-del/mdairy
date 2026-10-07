@@ -55,6 +55,7 @@ pub fn run() {
                 .lock()
                 .unwrap()
                 .extend(paths.iter().cloned());
+            eprintln!("[open] buffered+emitted {paths:?}");
             let _ = app.emit("open-paths", &paths);
         }
     });
