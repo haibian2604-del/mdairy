@@ -19,7 +19,6 @@ export interface SearchHit {
 
 export const api = {
   setVault: (path: string) => invoke<string>("set_vault", { path }),
-  getLastVault: () => invoke<string | null>("get_last_vault"),
   listTree: (vault: string) => invoke<TreeNode[]>("list_tree", { vault }),
   readFile: (vault: string, rel: string) => invoke<FileContent>("read_file", { vault, rel }),
   saveFile: (vault: string, rel: string, content: string, opts?: { encoding?: string; expectedMtimeMillis?: number | null }) =>

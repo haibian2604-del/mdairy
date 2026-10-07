@@ -28,10 +28,9 @@ export default function App() {
   const [paletteMode, setPaletteMode] = useState<"all" | "files" | null>(null);
 
   useEffect(() => {
-    // 启动即给一个 Typora 式未命名缓冲区（无 vault 也开，⌘S 时再引导选择位置）。
+    // Typora 式全新启动：只开一个未命名缓冲区，不恢复上次 vault/标签。
     // 守卫幂等：StrictMode 下 effect 双跑不重复开（store 跨卸载保留）
     if (useTabsStore.getState().tabs.length === 0) useTabsStore.getState().newUntitled();
-    void useWorkspaceStore.getState().restoreLastVault();
   }, []);
   // 顶部菜单（Rust 侧）点选 → 同步 store（与状态栏按钮共用一套状态）。
   // listen 异步注册，须带清理：StrictMode 双挂载会注册两份监听器，

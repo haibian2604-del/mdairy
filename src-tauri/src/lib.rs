@@ -15,7 +15,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            workspace::get_last_vault,
             workspace::set_vault,
             files::list_tree,
             files::read_file,

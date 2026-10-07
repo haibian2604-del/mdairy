@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../api", () => ({
   api: {
     setVault: vi.fn(async (p: string) => `/canon/${p}`),
-    getLastVault: vi.fn(async () => "last-vault"),
     listTree: vi.fn(async () => [{ kind: "file", name: "a", rel: "a.md" }]),
     readFile: vi.fn(),
     saveFile: vi.fn(),
@@ -30,11 +29,6 @@ describe("workspaceStore", () => {
     const s = useWorkspaceStore.getState();
     expect(s.vault).toBeNull();
     expect(s.error).toContain("不是文件夹");
-  });
-
-  it("restoreLastVault 恢复上次工作区", async () => {
-    await useWorkspaceStore.getState().restoreLastVault();
-    expect(useWorkspaceStore.getState().vault).toBe("/canon/last-vault");
   });
 
   it("refreshTree 刷新文件树，失败保持旧树", async () => {

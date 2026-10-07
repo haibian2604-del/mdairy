@@ -8,9 +8,9 @@
 
 项目处于 **M1 里程碑（骨架）已完成** 阶段，已可日常使用的基础功能：
 
-- 打开文件夹（vault），启动时自动恢复上次工作区
+- 打开文件夹（vault），启动为全新未命名笔记（Typora 式，不恢复上次会话）
 - 文件树浏览（过滤非 md 文件与 `_assets/`），多标签页编辑
-- CodeMirror 6 源码编辑，⌘S 保存，未保存圆点标记
+- Milkdown（ProseMirror）WYSIWYG 编辑，⌘S 保存，未保存圆点标记
 - 路径安全防护（拒绝 `..` 与越界路径）与文件读写
 - 亮/暗双主题设计 token（跟随系统）
 - 全中文界面
@@ -53,14 +53,14 @@ cd src-tauri && cargo test   # Rust
 
 ```
 src-tauri/src/
-  workspace.rs   工作区选择与记忆（持久化到应用配置目录）
+  workspace.rs   工作区选择与路径校验
   files.rs       文件列树/读/存，路径穿越防护
   watcher.rs     外部文件变更监听（M2）
 src/
   api.ts         Tauri command 封装（前后端唯一边界）
   stores/        workspace（文件树/工作区）、tabs（标签页/脏状态/保存）
-  components/    AppShell / Sidebar / FileTree / TabBar / EditorPane / StatusBar
-  hooks/         useOpenFile
+  components/    AppShell / Sidebar / FileTree / TabBar / MilkdownPane / StatusBar
+  hooks/         useVaultEvents
 docs/
   开发文档.md       立项分析、需求共识、技术栈、里程碑
   页面需求文档.md   设计系统与界面交互规格

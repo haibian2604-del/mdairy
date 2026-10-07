@@ -1,7 +1,5 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
 
 pub fn validate_vault(path: &str) -> Result<PathBuf, String> {
     let p = PathBuf::from(path);
@@ -11,38 +9,11 @@ pub fn validate_vault(path: &str) -> Result<PathBuf, String> {
     fs::canonicalize(&p).map_err(|e| format!("无法解析路径: {e}"))
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct AppConfig {
-    pub last_vault: Option<String>,
-}
-
-fn config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    Ok(dir.join("config.json"))
-}
-
-pub fn load_config(app: &tauri::AppHandle) -> AppConfig {
-    config_path(app)
-        .ok()
-        .and_then(|p| fs::read_to_string(p).ok())
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default()
-}
-
+/// 校验并规范化 vault 路径。启动为全新会话（Typora 式），不再持久化 last_vault。
 #[tauri::command]
-pub fn set_vault(app: tauri::AppHandle, path: String) -> Result<String, String> {
+pub fn set_vault(path: String) -> Result<String, String> {
     let canonical = validate_vault(&path)?;
-    let s = canonical.to_string_lossy().into_owned();
-    let cfg = AppConfig { last_vault: Some(s.clone()) };
-    let json = serde_json::to_string_pretty(&cfg).map_err(|e| e.to_string())?;
-    fs::write(config_path(&app)?, json).map_err(|e| e.to_string())?;
-    Ok(s)
-}
-
-#[tauri::command]
-pub fn get_last_vault(app: tauri::AppHandle) -> Option<String> {
-    load_config(&app).last_vault
+    Ok(canonical.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]
